@@ -1,0 +1,58 @@
+"""TEMPLATE PLUGIN — copy me to start a new plugin.
+
+HOW TO USE
+  1. Copy this file into the plugins/ folder and rename it to something like
+     my_plugin.py  (a real .py file, no leading underscore — files starting with
+     "_" are skipped on purpose so this template stays inert).
+  2. Edit the register() function below: keep the hooks you want, delete the rest.
+  3. Run the app. The plugin is auto-discovered and a toggle for it appears in the
+     Django admin under "Plugin states" (enabled by default). Flip it off to
+     disable the plugin without deleting the file.
+
+THE ONE RULE
+  Your module must define a top-level function `register(registry)`. The game
+  calls it once at startup with a shared registry you add things to.
+
+AVAILABLE HOOKS (use any combination)
+  registry.add_monster(monster)            -> add an enemy to the spawn table
+  registry.add_item(item)                  -> add an item to the catalog
+  registry.add_town_action(label, handler) -> add a button to the town menu
+  registry.on_victory(fn)                   -> run code after the player wins a fight
+
+The objects you pass in are plain engine objects (see engine/monsters.py and
+engine/items.py). Plugins never import Django.
+"""
+
+# You can import engine pieces if you need to build monsters/items.
+from engine.monsters import Monster
+from engine.items import Item
+
+
+def _example_town_action(character):
+    """A town action handler. Receives the engine Character; returns a message string."""
+    character.heal(5)
+    return "The template action healed you for 5 HP."
+
+
+def _example_on_victory(character):
+    """Runs after each won battle. Here: a small bonus gold reward."""
+    character.gold += 1
+
+
+def register(registry):
+    # --- Add a custom monster to the world's spawn table ---
+    registry.add_monster(Monster(
+        key="example-bat", name="Cave Bat", max_hp=6, attack=4, defense=0,
+        gold_reward=3, xp_reward=5, min_level=1,
+    ))
+
+    # --- Add a custom item to the catalog ---
+    registry.add_item(Item(
+        key="example-charm", name="Lucky Charm", kind="consumable", price=15, heal=10,
+    ))
+
+    # --- Add a town action (a button in the town menu) ---
+    registry.add_town_action("Template Action", _example_town_action)
+
+    # --- React to winning a fight ---
+    registry.on_victory(_example_on_victory)
