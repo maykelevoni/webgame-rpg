@@ -1,0 +1,15 @@
+{
+  "project": "ez-rpg",
+  "feature": "ez-rpg-flask-rebuild",
+  "phase": "implementation",
+  "current_task": 1,
+  "total_tasks": 14,
+  "completed_tasks": [],
+  "skipped_tasks": [],
+  "failed_tasks": [],
+  "playwright_cmd": "npx playwright test",
+  "tests_written": false,
+  "verified": false,
+  "created_at": "2026-06-07T00:00:00Z",
+  "updated_at": "2026-06-07T00:00:00Z"
+}

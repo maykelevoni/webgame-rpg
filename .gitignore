@@ -1,0 +1,27 @@
+# Secrets / environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Django
+*.log
+db.sqlite3
+/staticfiles/
+
+# Tests / tooling
+.pytest_cache/
+.coverage
+
+# Ship internals (state is tracked; logs/blockers are not)
+.ship/logs/
+.ship/blockers/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
