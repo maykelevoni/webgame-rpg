@@ -1,0 +1,18 @@
+/* Theme: Light Parchment — warm paper-and-ink palette.
+   A theme only sets these CSS variables; layout lives in css/base.css. */
+:root {
+  --bg: #f4ecd8;
+  --panel: #fbf6e9;
+  --text: #3b2f21;
+  --muted: #8a7a5c;
+  --border: #d8c9a3;
+  --accent: #a3632b;
+  --accent-2: #2e6f5e;
+  --accent-text: #fbf6e9;
+
+  --tile-empty: #e7d8b5;
+  --tile-town: #8fae6f;
+  --tile-monster: #c2796f;
+  --tile-treasure: #e0b441;
+  --player: #2e6f5e;
+}

@@ -1,0 +1,145 @@
+/* Layout + components. Colours come from CSS variables that each THEME sets,
+   so this file is shared by every theme and never hardcodes a palette. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+a { color: var(--accent); }
+
+.wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Top navigation */
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.nav .brand { font-weight: 700; color: var(--accent); text-decoration: none; }
+.nav a { text-decoration: none; }
+.nav .spacer { flex: 1; }
+.nav form { margin: 0; }
+
+select, input, button {
+  font: inherit;
+  color: var(--text);
+}
+input[type="text"], input[type="password"], select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .45rem .6rem;
+}
+
+/* Buttons */
+.btn, button {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  border-radius: 6px;
+  padding: .5rem .9rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
+.btn.secondary, button.secondary {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn:disabled, button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Panels / cards */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+h1, h2, h3 { line-height: 1.2; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: .5rem;
+}
+.stat { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: .5rem .7rem; }
+.stat .label { color: var(--muted); font-size: .8rem; }
+.stat .value { font-size: 1.2rem; font-weight: 700; }
+
+.list { list-style: none; padding: 0; margin: 0; }
+.list li {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .5rem 0; border-bottom: 1px solid var(--border);
+}
+.list li .grow { flex: 1; }
+
+/* Flash messages */
+.messages { list-style: none; padding: 0; margin: 1rem 0; }
+.messages li { padding: .6rem .9rem; border-radius: 8px; margin-bottom: .4rem; background: var(--panel); border: 1px solid var(--border); }
+.messages li.success { border-color: var(--accent); }
+.messages li.error { border-color: #c0392b; }
+
+/* HP bar */
+.bar { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; height: 14px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+
+/* ---- World grid ---- */
+.grid {
+  display: grid;
+  gap: 2px;
+  margin: 0 auto;
+  max-width: min(92vw, 460px);
+}
+.cell {
+  aspect-ratio: 1 / 1;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tile-empty);
+  border-radius: 4px;
+  font-size: clamp(.7rem, 3.5vw, 1.1rem);
+}
+.cell.town { background: var(--tile-town); }
+.cell.monster { background: var(--tile-monster); }
+.cell.treasure { background: var(--tile-treasure); }
+.cell.player { outline: 2px solid var(--player); }
+
+/* ---- D-pad ---- */
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 64px);
+  grid-template-rows: repeat(3, 64px);
+  gap: .4rem;
+  justify-content: center;
+  margin: 1rem auto;
+}
+.dpad form { margin: 0; }
+.dpad button { width: 64px; height: 64px; font-size: 1.4rem; padding: 0; }
+.dpad .n { grid-column: 2; grid-row: 1; }
+.dpad .w { grid-column: 1; grid-row: 2; }
+.dpad .e { grid-column: 3; grid-row: 2; }
+.dpad .s { grid-column: 2; grid-row: 3; }
+
+.combatants { display: flex; gap: 1rem; flex-wrap: wrap; }
+.combatants .side { flex: 1; min-width: 160px; }
+.log { font-family: ui-monospace, monospace; font-size: .85rem; max-height: 180px; overflow-y: auto; }
+
+@media (max-width: 420px) {
+  .dpad { grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); }
+  .dpad button { width: 56px; height: 56px; }
+}

@@ -1,0 +1,18 @@
+/* Theme: Dark Fantasy — moody dungeon palette.
+   A theme only sets these CSS variables; layout lives in css/base.css. */
+:root {
+  --bg: #14121b;
+  --panel: #211d2e;
+  --text: #ece8f5;
+  --muted: #9b91b5;
+  --border: #38314e;
+  --accent: #b07cff;
+  --accent-2: #7cf0d0;
+  --accent-text: #14121b;
+
+  --tile-empty: #2a2540;
+  --tile-town: #4a7c59;
+  --tile-monster: #8c3a4a;
+  --tile-treasure: #c9a227;
+  --player: #7cf0d0;
+}

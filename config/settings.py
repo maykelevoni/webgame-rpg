@@ -59,7 +59,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                # Theme context processor is added in a later task (task 009).
+                # Supplies the active theme + theme list to every template.
+                "game.context_processors.theme",
             ],
         },
     },
