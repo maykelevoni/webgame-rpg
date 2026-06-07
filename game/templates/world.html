@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}World — ez-rpg{% endblock %}
+{% block content %}
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+      <strong>{{ char.name }}</strong>
+      <span>Lv {{ char.level }} · HP {{ char.hp }}/{{ char.max_hp }} · {{ char.gold }}g</span>
+    </div>
+
+    <div class="grid" style="grid-template-columns: repeat({{ size }}, 1fr);">
+      {% for row in grid %}{% for cell in row %}
+        <div class="cell {{ cell.type }}{% if cell.is_player %} player{% endif %}">
+          {% if cell.is_player %}@{% elif cell.type == "town" %}🏰{% elif cell.type == "monster" %}👹{% elif cell.type == "treasure" %}💰{% endif %}
+        </div>
+      {% endfor %}{% endfor %}
+    </div>
+
+    {# D-pad: works with no JavaScript. Arrow keys are added by keys.js. #}
+    <div class="dpad">
+      <form class="n" method="post" action="{% url 'game:move' %}">{% csrf_token %}
+        <input type="hidden" name="direction" value="north"><button>▲</button></form>
+      <form class="w" method="post" action="{% url 'game:move' %}">{% csrf_token %}
+        <input type="hidden" name="direction" value="west"><button>◀</button></form>
+      <form class="e" method="post" action="{% url 'game:move' %}">{% csrf_token %}
+        <input type="hidden" name="direction" value="east"><button>▶</button></form>
+      <form class="s" method="post" action="{% url 'game:move' %}">{% csrf_token %}
+        <input type="hidden" name="direction" value="south"><button>▼</button></form>
+    </div>
+
+    <p style="text-align:center;color:var(--muted);">@ you · 🏰 town · 👹 monster · 💰 treasure</p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/keys.js' %}"></script>
+{% endblock %}
