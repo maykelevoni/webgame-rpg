@@ -98,9 +98,11 @@ def world_view(request):
         return redirect("game:character_create")
     if request.session.get("combat"):
         return redirect("game:combat")
-    world = services.get_world(char, services.load_config())
-    return render(request, "world.html",
-                  {"char": char, "grid": world.render_grid(), "size": world.size})
+    grid, size = services.build_grid(char, services.load_config())
+    return render(request, "world.html", {
+        "char": char, "grid": grid, "size": size,
+        "floor_sprite": services.FLOOR_SPRITE,
+    })
 
 
 @require_POST

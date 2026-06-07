@@ -166,6 +166,58 @@ def get_world(model: Character, cfg: EngineConfig) -> World:
     )
 
 
+# Sprite names used for the fixed map pieces (Kenney Roguelike pack).
+FLOOR_SPRITE = "tile_0005"           # grass
+PLAYER_SPRITE = "char_0594"          # the hero
+TOWN_SPRITE = "tile_0137"            # door (town entrance)
+TREASURE_SPRITE = "tile_0669"        # gold pile
+GENERIC_MONSTER_SPRITE = "char_0162"
+DECO_SPRITES = ["tile_0342", "tile_0513", "tile_0684"]  # grass with flowers
+
+
+def _deco_for(x: int, y: int) -> str | None:
+    """Deterministically sprinkle some flower tiles onto empty grass for life."""
+    h = (x * 73856093) ^ (y * 19349663)
+    if h % 5 == 0:
+        return DECO_SPRITES[(h // 5) % len(DECO_SPRITES)]
+    return None
+
+
+def build_grid(model: Character, cfg: EngineConfig):
+    """Return (grid, size) where each cell carries the sprite to draw.
+
+    Monster tiles show the *actual* monster that will spawn there (varied), not
+    one generic icon.
+    """
+    registry = get_active_plugins()
+    spawn = load_spawn_table(registry)
+    world = get_world(model, cfg)
+    grid = world.render_grid()
+
+    # Decide which monster sits on each monster tile (stable per tile).
+    monster_icon = {}
+    for (mx, my) in world.monsters:
+        mon = pick_monster(spawn, model.level, _tile_rng(model, mx, my))
+        monster_icon[(mx, my)] = (mon.icon or GENERIC_MONSTER_SPRITE) if mon else GENERIC_MONSTER_SPRITE
+
+    for row in grid:
+        for cell in row:
+            x, y = cell["x"], cell["y"]
+            cell["deco"] = None
+            if cell["is_player"]:
+                cell["sprite"] = PLAYER_SPRITE
+            elif cell["type"] == "monster":
+                cell["sprite"] = monster_icon.get((x, y), GENERIC_MONSTER_SPRITE)
+            elif cell["type"] == "town":
+                cell["sprite"] = TOWN_SPRITE
+            elif cell["type"] == "treasure":
+                cell["sprite"] = TREASURE_SPRITE
+            else:
+                cell["sprite"] = None
+                cell["deco"] = _deco_for(x, y)
+    return grid, world.size
+
+
 def _tile_rng(model: Character, x: int, y: int) -> random.Random:
     """A stable RNG per (map, tile) so a tile's monster/treasure is consistent."""
     return random.Random(hash((model.map_seed, x, y)) & 0xFFFFFFFF)

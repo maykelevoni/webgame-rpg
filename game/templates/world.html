@@ -9,20 +9,15 @@
     </div>
 
     <style>
-      /* Every walkable tile uses the dungeon-floor sprite as its background. */
-      .grid .cell { background-image: url("{% static 'sprites/tile_0048.png' %}"); }
+      /* Every walkable tile uses the grass sprite as its background. */
+      .grid .cell { background-image: url("{% static 'sprites/'|add:floor_sprite|add:'.png' %}"); }
     </style>
     <div class="grid" style="grid-template-columns: repeat({{ size }}, 1fr);">
       {% for row in grid %}{% for cell in row %}
-        <div class="cell{% if cell.is_player %} player{% endif %}">
-          {% if cell.is_player %}
-            <img class="spr" src="{% static 'sprites/tile_0096.png' %}" alt="you">
-          {% elif cell.type == "monster" %}
-            <img class="spr" src="{% static 'sprites/tile_0109.png' %}" alt="monster">
-          {% elif cell.type == "town" %}
-            <img class="spr" src="{% static 'sprites/tile_0046.png' %}" alt="town">
-          {% elif cell.type == "treasure" %}
-            <img class="spr" src="{% static 'sprites/tile_0089.png' %}" alt="treasure">
+        <div class="cell{% if cell.is_player %} player{% endif %}"
+             {% if cell.deco %}style="background-image:url('{% static 'sprites/'|add:cell.deco|add:'.png' %}')"{% endif %}>
+          {% if cell.sprite %}
+            <img class="spr" src="{% static 'sprites/'|add:cell.sprite|add:'.png' %}" alt="{{ cell.type }}">
           {% endif %}
         </div>
       {% endfor %}{% endfor %}
@@ -40,7 +35,13 @@
         <input type="hidden" name="direction" value="south"><button>▼</button></form>
     </div>
 
-    <p style="text-align:center;color:var(--muted);">@ you · 🏰 town · 👹 monster · 💰 treasure</p>
+    <p style="text-align:center;color:var(--muted);display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;align-items:center;">
+      <span><img class="icon-img" src="{% static 'sprites/'|add:floor_sprite|add:'.png' %}" alt=""> grass</span>
+      <span><img class="icon-img" src="{% static 'sprites/char_0594.png' %}" alt=""> you</span>
+      <span><img class="icon-img" src="{% static 'sprites/tile_0137.png' %}" alt=""> town</span>
+      <span><img class="icon-img" src="{% static 'sprites/char_0162.png' %}" alt=""> monster</span>
+      <span><img class="icon-img" src="{% static 'sprites/tile_0669.png' %}" alt=""> treasure</span>
+    </p>
   </div>
 {% endblock %}
 
