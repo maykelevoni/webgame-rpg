@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Shop — ez-rpg{% endblock %}
 {% block content %}
   <div class="panel">
@@ -9,6 +10,7 @@
     <ul class="list">
       {% for item in items %}
         <li>
+          {% if item.icon %}<img class="icon-img" src="{% static 'sprites/'|add:item.icon|add:'.png' %}" alt="">{% endif %}
           <span class="grow">
             {{ item.name }} — {{ item.price }}g
             <span style="color:var(--muted);">
@@ -32,6 +34,7 @@
       <ul class="list">
         {% for row in inventory %}
           <li>
+            {% if row.item.icon %}<img class="icon-img" src="{% static 'sprites/'|add:row.item.icon|add:'.png' %}" alt="">{% endif %}
             <span class="grow">{{ row.item.name }} ×{{ row.quantity }}</span>
             {% if row.item.sellable %}
             <form method="post" action="{% url 'game:sell' %}">{% csrf_token %}

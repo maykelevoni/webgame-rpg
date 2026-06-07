@@ -27,6 +27,7 @@ class Item:
     heal: int = 0            # HP restored when used (consumables)
     attack_bonus: int = 0    # added to attack when equipped (weapons)
     defense_bonus: int = 0   # added to defense when equipped (armor)
+    icon: str = ""           # sprite name for display (set from the DB), e.g. "tile_0115"
 
     @property
     def is_gear(self) -> bool:

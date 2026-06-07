@@ -27,6 +27,7 @@ urlpatterns = [
     path("town/", views.town_view, name="town"),
     path("town/action/", views.town_action, name="town_action"),
     path("town/rest/", views.rest, name="rest"),
+    path("town/leave/", views.leave_town, name="leave_town"),
     path("town/shop/", views.shop_view, name="shop"),
     path("town/shop/buy/", views.buy, name="buy"),
     path("town/shop/sell/", views.sell, name="sell"),

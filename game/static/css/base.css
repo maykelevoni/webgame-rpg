@@ -108,16 +108,33 @@ h1, h2, h3 { line-height: 1.2; }
   max-width: min(92vw, 460px);
 }
 .cell {
+  position: relative;
   aspect-ratio: 1 / 1;
   display: flex; align-items: center; justify-content: center;
-  background: var(--tile-empty);
-  border-radius: 4px;
+  background-color: var(--tile-empty);
+  background-size: cover;
+  image-rendering: pixelated;          /* keep pixel art crisp when scaled up */
+  border-radius: 2px;
   font-size: clamp(.7rem, 3.5vw, 1.1rem);
 }
-.cell.town { background: var(--tile-town); }
-.cell.monster { background: var(--tile-monster); }
-.cell.treasure { background: var(--tile-treasure); }
-.cell.player { outline: 2px solid var(--player); }
+.cell.player { outline: 2px solid var(--player); outline-offset: -2px; }
+
+/* A sprite drawn on top of a floor tile (player, monster, chest, door). */
+.spr {
+  position: absolute;
+  inset: 8%;
+  width: 84%; height: 84%;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+/* Inline item/monster icons in lists, shop, combat. */
+.icon-img {
+  width: 32px; height: 32px;
+  image-rendering: pixelated;
+  object-fit: contain;
+  vertical-align: middle;
+}
 
 /* ---- D-pad ---- */
 .dpad {

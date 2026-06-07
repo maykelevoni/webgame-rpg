@@ -1,16 +1,20 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Battle — ez-rpg{% endblock %}
 {% block content %}
   <div class="panel">
     <h1>Battle!</h1>
     <div class="combatants">
       <div class="side">
-        <h3>{{ char.name }}</h3>
+        <h3><img class="icon-img" src="{% static 'sprites/tile_0096.png' %}" alt=""> {{ char.name }}</h3>
         <div class="bar"><span style="width: {% widthratio fight.character.hp fight.character.max_hp 100 %}%"></span></div>
         <p>HP {{ fight.character.hp }} / {{ fight.character.max_hp }}</p>
       </div>
       <div class="side">
-        <h3>{{ fight.monster.name }}</h3>
+        <h3>
+          {% if fight.monster.icon %}<img class="icon-img" src="{% static 'sprites/'|add:fight.monster.icon|add:'.png' %}" alt="">{% endif %}
+          {{ fight.monster.name }}
+        </h3>
         <div class="bar"><span style="width: {% widthratio fight.monster_hp fight.monster.max_hp 100 %}%"></span></div>
         <p>HP {{ fight.monster_hp }} / {{ fight.monster.max_hp }}</p>
       </div>

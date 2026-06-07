@@ -57,11 +57,13 @@ class World:
         rng = random.Random(seed)
         cleared_set = {tuple(c) for c in (cleared or [])}
 
-        start = player or (size // 2, size // 2)
+        # The map layout depends ONLY on the seed/size — never on where the player
+        # currently stands — so the world stays stable as the player walks around.
+        # We anchor placement on the centre tile (kept empty) and put the player
+        # there by default; their live position is passed in separately.
+        anchor = (size // 2, size // 2)
 
-        # Pick distinct tiles for the town, monsters and treasure. We never place
-        # anything on the player's starting tile.
-        taken = {start}
+        taken = {anchor}
         town = cls._pick_tile(rng, size, taken)
 
         monsters: set[tuple[int, int]] = set()
@@ -76,7 +78,8 @@ class World:
         monsters -= cleared_set
         treasures -= cleared_set
 
-        return cls(size, town, monsters, treasures, start)
+        player_pos = player or anchor
+        return cls(size, town, monsters, treasures, player_pos)
 
     @staticmethod
     def _pick_tile(rng: random.Random, size: int, taken: set) -> tuple[int, int]:

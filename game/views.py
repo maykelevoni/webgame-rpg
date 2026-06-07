@@ -143,6 +143,8 @@ def combat_action(request):
     if fight.outcome == "win":
         gold, xp = fight.rewards()
         messages.success(request, f"Victory! +{gold} gold, +{xp} XP.")
+        if getattr(fight, "area_cleared", False):
+            messages.success(request, "You cleared the whole area — a new region unfolds!")
         return redirect("game:world")
     if fight.outcome == "lose":
         messages.error(request, "You were defeated and woke up in town (lost half your gold).")
@@ -183,6 +185,13 @@ def town_action(request):
 def rest(request):
     messages.info(request, services.rest(request.user))
     return redirect("game:town")
+
+
+@require_POST
+@login_required
+def leave_town(request):
+    services.leave_town(request.user)
+    return redirect("game:world")
 
 
 @login_required

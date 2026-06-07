@@ -21,7 +21,7 @@ from engine.items import Item as EngineItem
 from engine.monsters import Monster as EngineMonster
 from engine.monsters import pick_monster
 from engine.plugins import load_plugins
-from engine.world import MONSTER, TOWN, TREASURE, World
+from engine.world import EMPTY, MONSTER, TOWN, TREASURE, World
 
 from .identity import get_current_player
 from .models import Character, GameConfig, InventoryItem, Item, Monster, PluginState
@@ -53,7 +53,7 @@ def load_catalog() -> dict[str, EngineItem]:
         row.key: EngineItem(
             key=row.key, name=row.name, kind=row.kind, price=row.price,
             heal=row.heal, attack_bonus=row.attack_bonus,
-            defense_bonus=row.defense_bonus,
+            defense_bonus=row.defense_bonus, icon=row.icon,
         )
         for row in Item.objects.all()
     }
@@ -84,7 +84,7 @@ def load_spawn_table(registry) -> list[EngineMonster]:
         EngineMonster(
             key=row.key, name=row.name, max_hp=row.max_hp, attack=row.attack,
             defense=row.defense, gold_reward=row.gold_reward,
-            xp_reward=row.xp_reward, min_level=row.min_level,
+            xp_reward=row.xp_reward, min_level=row.min_level, icon=row.icon,
         )
         for row in Monster.objects.all()
     ]
@@ -257,6 +257,8 @@ def combat_action(request, action: str, item_key: str | None = None):
         save_engine_character(char, model)
         model.save()
         del request.session["combat"]
+        # If that was the last monster, unfurl a fresh region to explore.
+        fight.area_cleared = _refresh_if_cleared(model, cfg)
     elif fight.outcome == LOSE:
         # Gentle defeat: revive at town, lose half your gold.
         char.gold //= 2
@@ -327,6 +329,42 @@ def use_item(user, item_key: str) -> str:
     healed = char.use_consumable(item_key)
     save_engine_character(char, model)
     return f"Recovered {healed} HP." if healed else "Nothing happened."
+
+
+def _refresh_if_cleared(model: Character, cfg: EngineConfig) -> bool:
+    """If no monsters remain on the map, roll a brand-new region. Returns True if so."""
+    world = get_world(model, cfg)
+    if world.monsters:
+        return False
+    model.map_seed = random.randrange(1_000_000)
+    model.cleared = []
+    model.pos_x = cfg.grid_size // 2
+    model.pos_y = cfg.grid_size // 2
+    model.save()
+    return True
+
+
+def leave_town(user) -> None:
+    """Step the player out of town onto an adjacent tile (so the town stays visible)."""
+    model = Character.objects.get(owner=user)
+    cfg = load_config()
+    world = get_world(model, cfg)
+    tx, ty = world.town
+    # Prefer an empty neighbour; fall back to any in-bounds neighbour.
+    neighbours = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+    best = None
+    for dx, dy in neighbours:
+        nx, ny = tx + dx, ty + dy
+        if not world.in_bounds(nx, ny):
+            continue
+        if best is None:
+            best = (nx, ny)
+        if world.tile_type(nx, ny) == EMPTY:
+            best = (nx, ny)
+            break
+    if best:
+        model.pos_x, model.pos_y = best
+        model.save()
 
 
 def rest(user) -> str:

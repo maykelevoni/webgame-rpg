@@ -14,7 +14,7 @@ from .models import (
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
     list_display = ("name", "key", "kind", "price", "heal",
-                    "attack_bonus", "defense_bonus", "sellable")
+                    "attack_bonus", "defense_bonus", "sellable", "icon")
     list_filter = ("kind", "sellable")
     search_fields = ("name", "key")
 
@@ -22,7 +22,7 @@ class ItemAdmin(admin.ModelAdmin):
 @admin.register(Monster)
 class MonsterAdmin(admin.ModelAdmin):
     list_display = ("name", "key", "max_hp", "attack", "defense",
-                    "gold_reward", "xp_reward", "min_level")
+                    "gold_reward", "xp_reward", "min_level", "icon")
     search_fields = ("name", "key")
 
 

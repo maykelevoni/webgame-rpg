@@ -28,6 +28,8 @@ class Item(models.Model):
     attack_bonus = models.PositiveIntegerField(default=0, help_text="When equipped (weapons)")
     defense_bonus = models.PositiveIntegerField(default=0, help_text="When equipped (armor)")
     sellable = models.BooleanField(default=True)
+    icon = models.CharField(max_length=40, blank=True,
+                            help_text="Sprite name in static/sprites, e.g. 'tile_0115'")
 
     def __str__(self):
         return self.name
@@ -43,6 +45,8 @@ class Monster(models.Model):
     gold_reward = models.PositiveIntegerField()
     xp_reward = models.PositiveIntegerField()
     min_level = models.PositiveIntegerField(default=1)
+    icon = models.CharField(max_length=40, blank=True,
+                            help_text="Sprite name in static/sprites, e.g. 'tile_0108'")
 
     def __str__(self):
         return self.name
@@ -115,9 +119,9 @@ class GameConfig(models.Model):
     start_defense = models.PositiveIntegerField(default=4)
     start_gold = models.PositiveIntegerField(default=20)
 
-    grid_size = models.PositiveIntegerField(default=10)
-    monster_count = models.PositiveIntegerField(default=6)
-    treasure_count = models.PositiveIntegerField(default=3)
+    grid_size = models.PositiveIntegerField(default=12)
+    monster_count = models.PositiveIntegerField(default=14)
+    treasure_count = models.PositiveIntegerField(default=6)
 
     xp_base = models.PositiveIntegerField(default=50)
     xp_growth = models.FloatField(default=1.5)

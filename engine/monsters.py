@@ -20,6 +20,7 @@ class Monster:
     gold_reward: int
     xp_reward: int
     min_level: int = 1
+    icon: str = ""  # sprite name for display (set from the DB), e.g. "tile_0108"
 
 
 def pick_monster(

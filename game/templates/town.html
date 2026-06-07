@@ -20,7 +20,9 @@
       </form>
       {% endfor %}
 
-      <a class="btn secondary" href="{% url 'game:world' %}">🚪 Leave town</a>
+      <form method="post" action="{% url 'game:leave_town' %}">{% csrf_token %}
+        <button type="submit" class="btn secondary" style="width:100%;">🚪 Leave town</button>
+      </form>
     </div>
   </div>
 {% endblock %}

@@ -8,10 +8,22 @@
       <span>Lv {{ char.level }} · HP {{ char.hp }}/{{ char.max_hp }} · {{ char.gold }}g</span>
     </div>
 
+    <style>
+      /* Every walkable tile uses the dungeon-floor sprite as its background. */
+      .grid .cell { background-image: url("{% static 'sprites/tile_0048.png' %}"); }
+    </style>
     <div class="grid" style="grid-template-columns: repeat({{ size }}, 1fr);">
       {% for row in grid %}{% for cell in row %}
-        <div class="cell {{ cell.type }}{% if cell.is_player %} player{% endif %}">
-          {% if cell.is_player %}@{% elif cell.type == "town" %}🏰{% elif cell.type == "monster" %}👹{% elif cell.type == "treasure" %}💰{% endif %}
+        <div class="cell{% if cell.is_player %} player{% endif %}">
+          {% if cell.is_player %}
+            <img class="spr" src="{% static 'sprites/tile_0096.png' %}" alt="you">
+          {% elif cell.type == "monster" %}
+            <img class="spr" src="{% static 'sprites/tile_0109.png' %}" alt="monster">
+          {% elif cell.type == "town" %}
+            <img class="spr" src="{% static 'sprites/tile_0046.png' %}" alt="town">
+          {% elif cell.type == "treasure" %}
+            <img class="spr" src="{% static 'sprites/tile_0089.png' %}" alt="treasure">
+          {% endif %}
         </div>
       {% endfor %}{% endfor %}
     </div>

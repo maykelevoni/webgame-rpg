@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{{ char.name }} — ez-rpg{% endblock %}
 {% block content %}
   <div class="panel">
@@ -19,6 +20,7 @@
       <ul class="list">
         {% for entry in inventory %}
           <li>
+            {% if entry.item.icon %}<img class="icon-img" src="{% static 'sprites/'|add:entry.item.icon|add:'.png' %}" alt="">{% endif %}
             <span class="grow">
               {{ entry.item.name }} ×{{ entry.quantity }}
               {% if entry.equipped %}<em>(equipped)</em>{% endif %}
