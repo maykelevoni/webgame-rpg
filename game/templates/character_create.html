@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}New character — ez-rpg{% endblock %}
+{% block content %}
+  <div class="panel">
+    <h1>Create your character</h1>
+    <form method="post">
+      {% csrf_token %}
+      <p>
+        <label for="name">Name your hero</label><br>
+        <input type="text" id="name" name="name" maxlength="40" placeholder="Hero" autofocus>
+      </p>
+      <button type="submit">Begin adventure</button>
+    </form>
+  </div>
+{% endblock %}

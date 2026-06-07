@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}ez-rpg{% endblock %}
+{% block content %}
+  <div class="panel">
+    <h1>⚔ ez-rpg</h1>
+    <p>A small, modular web RPG. Explore a grid world, fight monsters, level up,
+       and gear up in town. Extend it with plugins; restyle it with themes.</p>
+
+    {% if not user.is_authenticated %}
+      <p>
+        <a class="btn" href="{% url 'signup' %}">Start playing</a>
+        <a class="btn secondary" href="{% url 'login' %}">Log in</a>
+      </p>
+    {% elif character %}
+      <p>Welcome back, <strong>{{ character.name }}</strong> (Level {{ character.level }}).</p>
+      <p><a class="btn" href="{% url 'game:world' %}">Continue</a></p>
+    {% else %}
+      <p>You don't have a character yet.</p>
+      <p><a class="btn" href="{% url 'game:character_create' %}">Create your character</a></p>
+    {% endif %}
+  </div>
+{% endblock %}

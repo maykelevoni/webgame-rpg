@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ char.name }} — ez-rpg{% endblock %}
+{% block content %}
+  <div class="panel">
+    <h1>{{ char.name }}</h1>
+    <div class="stat-grid">
+      <div class="stat"><div class="label">Level</div><div class="value">{{ char.level }}</div></div>
+      <div class="stat"><div class="label">XP</div><div class="value">{{ char.xp }} / {{ next_xp }}</div></div>
+      <div class="stat"><div class="label">HP</div><div class="value">{{ char.hp }} / {{ char.max_hp }}</div></div>
+      <div class="stat"><div class="label">Gold</div><div class="value">{{ char.gold }}</div></div>
+      <div class="stat"><div class="label">Attack</div><div class="value">{{ eff_atk }}</div></div>
+      <div class="stat"><div class="label">Defense</div><div class="value">{{ eff_def }}</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Inventory</h2>
+    {% if inventory %}
+      <ul class="list">
+        {% for entry in inventory %}
+          <li>
+            <span class="grow">
+              {{ entry.item.name }} ×{{ entry.quantity }}
+              {% if entry.equipped %}<em>(equipped)</em>{% endif %}
+            </span>
+            {% if entry.item.kind == "consumable" %}
+              <form method="post" action="{% url 'game:use_item' %}">{% csrf_token %}
+                <input type="hidden" name="item_key" value="{{ entry.item.key }}">
+                <input type="hidden" name="next" value="{% url 'game:character_sheet' %}">
+                <button type="submit">Use</button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'game:equip' %}">{% csrf_token %}
+                <input type="hidden" name="item_key" value="{{ entry.item.key }}">
+                <input type="hidden" name="next" value="{% url 'game:character_sheet' %}">
+                <button type="submit" class="secondary">
+                  {% if entry.equipped %}Equipped{% else %}Equip{% endif %}
+                </button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Your inventory is empty.</p>
+    {% endif %}
+    <p><a class="btn" href="{% url 'game:world' %}">Back to world</a></p>
+  </div>
+{% endblock %}
