@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Town — ez-rpg{% endblock %}
+{% block content %}
+  <div class="panel">
+    <h1>🏰 Town</h1>
+    <p>{{ char.name }} · HP {{ char.hp }}/{{ char.max_hp }} · {{ char.gold }} gold</p>
+
+    <div style="display:flex;flex-direction:column;gap:.6rem;max-width:320px;">
+      <a class="btn" href="{% url 'game:shop' %}">🛒 Shop</a>
+
+      <form method="post" action="{% url 'game:rest' %}">{% csrf_token %}
+        <button type="submit" class="secondary" style="width:100%;">🛏 Rest (heal)</button>
+      </form>
+
+      {# Town actions added by plugins appear here only when enabled. #}
+      {% for label in plugin_actions %}
+      <form method="post" action="{% url 'game:town_action' %}">{% csrf_token %}
+        <input type="hidden" name="label" value="{{ label }}">
+        <button type="submit" class="secondary" style="width:100%;">✨ {{ label }}</button>
+      </form>
+      {% endfor %}
+
+      <a class="btn secondary" href="{% url 'game:world' %}">🚪 Leave town</a>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Shop — ez-rpg{% endblock %}
+{% block content %}
+  <div class="panel">
+    <h1>🛒 Shop</h1>
+    <p>Your gold: <strong>{{ char.gold }}</strong></p>
+
+    <h2>Buy</h2>
+    <ul class="list">
+      {% for item in items %}
+        <li>
+          <span class="grow">
+            {{ item.name }} — {{ item.price }}g
+            <span style="color:var(--muted);">
+              {% if item.kind == "consumable" %}(+{{ item.heal }} HP)
+              {% elif item.kind == "weapon" %}(+{{ item.attack_bonus }} atk)
+              {% elif item.kind == "armor" %}(+{{ item.defense_bonus }} def){% endif %}
+            </span>
+          </span>
+          <form method="post" action="{% url 'game:buy' %}">{% csrf_token %}
+            <input type="hidden" name="item_key" value="{{ item.key }}">
+            <button type="submit" {% if char.gold < item.price %}disabled{% endif %}>Buy</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h2>Sell</h2>
+    {% if inventory %}
+      <ul class="list">
+        {% for row in inventory %}
+          <li>
+            <span class="grow">{{ row.item.name }} ×{{ row.quantity }}</span>
+            {% if row.item.sellable %}
+            <form method="post" action="{% url 'game:sell' %}">{% csrf_token %}
+              <input type="hidden" name="item_key" value="{{ row.item.key }}">
+              <button type="submit" class="secondary">Sell</button>
+            </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Nothing to sell.</p>
+    {% endif %}
+    <p><a class="btn secondary" href="{% url 'game:town' %}">Back to town</a></p>
+  </div>
+{% endblock %}
