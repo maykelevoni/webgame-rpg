@@ -3,13 +3,25 @@
 {% block title %}World — ez-rpg{% endblock %}
 {% block content %}
   <div class="panel">
-    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
-      <strong>{{ char.name }}</strong>
-      <span>Lv {{ char.level }} · HP {{ char.hp }}/{{ char.max_hp }} · {{ char.gold }}g</span>
+    {# --- Status HUD with bars --- #}
+    <div class="hud">
+      <div class="hud-row">
+        <strong>{{ char.name }}</strong>
+        <span style="color:var(--muted);">Lv {{ char.level }}</span>
+        <span class="grow"></span>
+        <span>💰 {{ char.gold }}</span>
+      </div>
+      <div class="hud-bar">
+        <span class="bar-label">HP {{ char.hp }}/{{ char.max_hp }}</span>
+        <div class="bar hp"><span style="width: {% widthratio char.hp char.max_hp 100 %}%"></span></div>
+      </div>
+      <div class="hud-bar">
+        <span class="bar-label">XP {{ char.xp }}/{{ next_xp }}</span>
+        <div class="bar xp"><span style="width: {% widthratio char.xp next_xp 100 %}%"></span></div>
+      </div>
     </div>
 
     <style>
-      /* Every walkable tile uses the grass sprite as its background. */
       .grid .cell { background-image: url("{% static 'sprites/'|add:floor_sprite|add:'.png' %}"); }
     </style>
     <div class="grid" style="grid-template-columns: repeat({{ size }}, 1fr);">
@@ -36,13 +48,58 @@
     </div>
 
     <p style="text-align:center;color:var(--muted);display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;align-items:center;">
-      <span><img class="icon-img" src="{% static 'sprites/'|add:floor_sprite|add:'.png' %}" alt=""> grass</span>
       <span><img class="icon-img" src="{% static 'sprites/char_0594.png' %}" alt=""> you</span>
       <span><img class="icon-img" src="{% static 'sprites/tile_0137.png' %}" alt=""> town</span>
-      <span><img class="icon-img" src="{% static 'sprites/char_0162.png' %}" alt=""> monster</span>
       <span><img class="icon-img" src="{% static 'sprites/tile_0669.png' %}" alt=""> treasure</span>
+      <span>monsters lurk unseen…</span>
     </p>
   </div>
+
+  {# --- Pokémon-style battle overlay (only while a fight is active) --- #}
+  {% if fight %}
+  <div class="battle-overlay">
+    <div class="battle-screen panel">
+      <h2>A wild {{ fight.monster.name }} appears!</h2>
+      <div class="combatants">
+        <div class="side" style="text-align:center;">
+          {% if fight.monster.icon %}
+            <img class="battle-sprite" src="{% static 'sprites/'|add:fight.monster.icon|add:'.png' %}" alt="">
+          {% endif %}
+          <h3>{{ fight.monster.name }}</h3>
+          <div class="bar hp"><span style="width: {% widthratio fight.monster_hp fight.monster.max_hp 100 %}%"></span></div>
+          <p>{{ fight.monster_hp }} / {{ fight.monster.max_hp }}</p>
+        </div>
+        <div class="side" style="text-align:center;">
+          <img class="battle-sprite" src="{% static 'sprites/char_0594.png' %}" alt="">
+          <h3>{{ char.name }}</h3>
+          <div class="bar hp"><span style="width: {% widthratio fight.character.hp fight.character.max_hp 100 %}%"></span></div>
+          <p>{{ fight.character.hp }} / {{ fight.character.max_hp }}</p>
+        </div>
+      </div>
+
+      <div class="battle-actions">
+        <form method="post" action="{% url 'game:combat_action' %}">{% csrf_token %}
+          <input type="hidden" name="action" value="attack"><button type="submit">⚔ Attack</button></form>
+        <form method="post" action="{% url 'game:combat_action' %}">{% csrf_token %}
+          <input type="hidden" name="action" value="flee"><button type="submit" class="secondary">🏃 Flee</button></form>
+        {% if potions %}
+        <form method="post" action="{% url 'game:combat_action' %}">{% csrf_token %}
+          <input type="hidden" name="action" value="item">
+          <select name="item_key">
+            {% for entry in potions %}
+              <option value="{{ entry.item.key }}">{{ entry.item.name }} ×{{ entry.quantity }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="secondary">Use</button></form>
+        {% endif %}
+      </div>
+
+      {% if fight.log %}
+      <div class="log">{% for line in fight.log %}<div>{{ line }}</div>{% endfor %}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 {% endblock %}
 
 {% block scripts %}

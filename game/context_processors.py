@@ -4,6 +4,10 @@
 of available themes, so the base layout can load the right CSS and show the picker
 everywhere without each view having to pass them in.
 """
+import time
+
+from django.conf import settings
+
 from engine.themes import available_themes
 
 from .models import Profile
@@ -20,4 +24,10 @@ def theme(request):
         active = profile.theme
     if themes and active not in themes:
         active = themes[0]
-    return {"active_theme": active, "available_themes": themes}
+    # Cache-bust CSS: change every reload in dev, stable in production.
+    asset_version = int(time.time()) if settings.DEBUG else "1"
+    return {
+        "active_theme": active,
+        "available_themes": themes,
+        "asset_version": asset_version,
+    }

@@ -120,8 +120,10 @@ class GameConfig(models.Model):
     start_gold = models.PositiveIntegerField(default=20)
 
     grid_size = models.PositiveIntegerField(default=12)
-    monster_count = models.PositiveIntegerField(default=14)
-    treasure_count = models.PositiveIntegerField(default=6)
+    monster_count = models.PositiveIntegerField(default=14)  # legacy; monsters are now hidden
+    treasure_count = models.PositiveIntegerField(default=5)
+    encounter_rate = models.FloatField(
+        default=0.18, help_text="Chance (0-1) of a random battle per step on grass")
 
     xp_base = models.PositiveIntegerField(default=50)
     xp_growth = models.FloatField(default=1.5)

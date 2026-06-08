@@ -21,8 +21,9 @@ class EngineConfig:
 
     # World generation
     grid_size: int = 10
-    monster_count: int = 6
+    monster_count: int = 6        # legacy; monsters are random encounters now
     treasure_count: int = 3
+    encounter_rate: float = 0.18  # chance of a random battle per step
 
     # Leveling curve
     xp_base: int = 50        # XP required to go from level 1 -> 2

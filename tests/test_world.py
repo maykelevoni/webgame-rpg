@@ -18,19 +18,19 @@ def test_same_seed_makes_the_same_map():
 def test_map_has_expected_counts():
     w = World.generate(seed=7, cfg=CFG)
     assert len([w.town]) == 1
-    assert len(w.monsters) == CFG.monster_count
+    # Monsters are hidden now (random encounters), so none are placed on the map.
+    assert len(w.monsters) == 0
     assert len(w.treasures) == CFG.treasure_count
-    # Nothing overlaps the player's start tile.
-    assert w.player not in w.monsters
+    # Treasure never overlaps the player's start tile.
     assert w.player not in w.treasures
 
 
-def test_cleared_tiles_are_not_repopulated():
+def test_cleared_treasure_is_not_repopulated():
     w0 = World.generate(seed=7, cfg=CFG)
-    a_monster = next(iter(w0.monsters))
-    w1 = World.generate(seed=7, cfg=CFG, cleared=[list(a_monster)])
-    assert a_monster not in w1.monsters
-    assert len(w1.monsters) == CFG.monster_count - 1
+    a_treasure = next(iter(w0.treasures))
+    w1 = World.generate(seed=7, cfg=CFG, cleared=[list(a_treasure)])
+    assert a_treasure not in w1.treasures
+    assert len(w1.treasures) == CFG.treasure_count - 1
 
 
 def test_moving_off_the_edge_is_blocked():

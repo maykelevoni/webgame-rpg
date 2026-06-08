@@ -21,7 +21,7 @@ from engine.items import Item as EngineItem
 from engine.monsters import Monster as EngineMonster
 from engine.monsters import pick_monster
 from engine.plugins import load_plugins
-from engine.world import EMPTY, MONSTER, TOWN, TREASURE, World
+from engine.world import EMPTY, MOVED, TOWN, TREASURE, World
 
 from .identity import get_current_player
 from .models import Character, GameConfig, InventoryItem, Item, Monster, PluginState
@@ -40,7 +40,8 @@ def load_config() -> EngineConfig:
         start_hp=row.start_hp, start_attack=row.start_attack,
         start_defense=row.start_defense, start_gold=row.start_gold,
         grid_size=row.grid_size, monster_count=row.monster_count,
-        treasure_count=row.treasure_count, xp_base=row.xp_base,
+        treasure_count=row.treasure_count, encounter_rate=row.encounter_rate,
+        xp_base=row.xp_base,
         xp_growth=row.xp_growth, stat_growth=row.stat_growth,
         rest_cost=row.rest_cost, treasure_gold_min=row.treasure_gold_min,
         treasure_gold_max=row.treasure_gold_max,
@@ -186,28 +187,17 @@ def _deco_for(x: int, y: int) -> str | None:
 def build_grid(model: Character, cfg: EngineConfig):
     """Return (grid, size) where each cell carries the sprite to draw.
 
-    Monster tiles show the *actual* monster that will spawn there (varied), not
-    one generic icon.
+    Monsters are hidden (random encounters), so only the player, town, and
+    treasure show on the map; empty grass gets occasional flower decoration.
     """
-    registry = get_active_plugins()
-    spawn = load_spawn_table(registry)
     world = get_world(model, cfg)
     grid = world.render_grid()
-
-    # Decide which monster sits on each monster tile (stable per tile).
-    monster_icon = {}
-    for (mx, my) in world.monsters:
-        mon = pick_monster(spawn, model.level, _tile_rng(model, mx, my))
-        monster_icon[(mx, my)] = (mon.icon or GENERIC_MONSTER_SPRITE) if mon else GENERIC_MONSTER_SPRITE
-
     for row in grid:
         for cell in row:
             x, y = cell["x"], cell["y"]
             cell["deco"] = None
             if cell["is_player"]:
                 cell["sprite"] = PLAYER_SPRITE
-            elif cell["type"] == "monster":
-                cell["sprite"] = monster_icon.get((x, y), GENERIC_MONSTER_SPRITE)
             elif cell["type"] == "town":
                 cell["sprite"] = TOWN_SPRITE
             elif cell["type"] == "treasure":
@@ -231,32 +221,40 @@ def do_move(request, direction: str) -> dict:
     result = world.move(direction)
     model.pos_x, model.pos_y = world.player_x, world.player_y
 
-    if result.kind == MONSTER:
-        _begin_combat(request, model, (result.x, result.y), cfg)
-        model.save()
-        return {"kind": "monster"}
-
     if result.kind == TREASURE:
         reward = _tile_rng(model, result.x, result.y).randint(
             cfg.treasure_gold_min, cfg.treasure_gold_max)
         model.gold += reward
         model.cleared.append([result.x, result.y])
+        refreshed = _refresh_if_cleared(model, cfg)  # all treasure found -> new region
         model.save()
-        return {"kind": "treasure", "gold": reward}
+        return {"kind": "treasure", "gold": reward, "new_region": refreshed}
+
+    if result.kind == TOWN:
+        model.save()
+        return {"kind": "town"}
+
+    # Moved onto open grass: maybe a hidden monster springs an ambush.
+    if result.kind == MOVED and random.random() < cfg.encounter_rate:
+        _begin_encounter(request, model, cfg)
+        model.save()
+        return {"kind": "encounter"}
 
     model.save()
-    return {"kind": result.kind}  # moved / blocked / town
+    return {"kind": result.kind}  # moved / blocked
 
 
 # ----- combat (in-progress fight is kept in the session) ------------------
-def _begin_combat(request, model: Character, tile, cfg: EngineConfig) -> None:
+def _begin_encounter(request, model: Character, cfg: EngineConfig) -> None:
+    """Start a random battle with a level-appropriate monster (truly random)."""
     registry = get_active_plugins()
     spawn = load_spawn_table(registry)
-    monster = pick_monster(spawn, model.level, _tile_rng(model, *tile))
+    monster = pick_monster(spawn, model.level, random.Random())
+    if monster is None:
+        return
     request.session["combat"] = {
         "monster": asdict(monster),
         "monster_hp": monster.max_hp,
-        "tile": list(tile),
         "log": [],
     }
 
@@ -304,13 +302,9 @@ def combat_action(request, action: str, item_key: str | None = None):
         char.gold += gold
         char.gain_xp(xp, cfg)
         registry.run_victory_hooks(char)          # plugin on_victory hooks
-        if data["tile"] not in model.cleared:
-            model.cleared.append(data["tile"])     # remove the monster from the map
         save_engine_character(char, model)
         model.save()
         del request.session["combat"]
-        # If that was the last monster, unfurl a fresh region to explore.
-        fight.area_cleared = _refresh_if_cleared(model, cfg)
     elif fight.outcome == LOSE:
         # Gentle defeat: revive at town, lose half your gold.
         char.gold //= 2
@@ -384,15 +378,14 @@ def use_item(user, item_key: str) -> str:
 
 
 def _refresh_if_cleared(model: Character, cfg: EngineConfig) -> bool:
-    """If no monsters remain on the map, roll a brand-new region. Returns True if so."""
+    """If all treasure has been collected, roll a brand-new region. Returns True if so."""
     world = get_world(model, cfg)
-    if world.monsters:
+    if world.treasures:
         return False
     model.map_seed = random.randrange(1_000_000)
     model.cleared = []
     model.pos_x = cfg.grid_size // 2
     model.pos_y = cfg.grid_size // 2
-    model.save()
     return True
 
 

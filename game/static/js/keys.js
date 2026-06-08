@@ -8,6 +8,8 @@
     k: "n", j: "s", h: "w", l: "e", // vim-style, just for fun
   };
   document.addEventListener("keydown", function (e) {
+    // Don't move while a battle overlay is open.
+    if (document.querySelector(".battle-overlay")) return;
     const dir = map[e.key];
     if (!dir) return;
     const form = byClass(dir);

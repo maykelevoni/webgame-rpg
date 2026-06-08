@@ -66,16 +66,16 @@ class World:
         taken = {anchor}
         town = cls._pick_tile(rng, size, taken)
 
+        # Monsters are no longer placed on the map — they appear as random
+        # encounters while walking (see services.do_move). Only the town and
+        # treasure are visible on the overworld.
         monsters: set[tuple[int, int]] = set()
-        for _ in range(cfg.monster_count):
-            monsters.add(cls._pick_tile(rng, size, taken))
 
         treasures: set[tuple[int, int]] = set()
         for _ in range(cfg.treasure_count):
             treasures.add(cls._pick_tile(rng, size, taken))
 
-        # Remove anything the player has already dealt with (town is permanent).
-        monsters -= cleared_set
+        # Remove treasure the player has already collected (town is permanent).
         treasures -= cleared_set
 
         player_pos = player or anchor

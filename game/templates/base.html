@@ -5,9 +5,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ez-rpg{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v={{ asset_version }}">
   {# The active theme only overrides colour variables. #}
-  <link rel="stylesheet" href="{% static 'themes/'|add:active_theme|add:'/theme.css' %}">
+  <link rel="stylesheet" href="{% static 'themes/'|add:active_theme|add:'/theme.css' %}?v={{ asset_version }}">
 </head>
 <body>
   <nav class="nav">

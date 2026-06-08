@@ -96,41 +96,45 @@ def world_view(request):
     char = get_current_player(request)
     if not char:
         return redirect("game:character_create")
-    if request.session.get("combat"):
-        return redirect("game:combat")
-    grid, size = services.build_grid(char, services.load_config())
-    return render(request, "world.html", {
+    cfg = services.load_config()
+    grid, size = services.build_grid(char, cfg)
+    ctx = {
         "char": char, "grid": grid, "size": size,
         "floor_sprite": services.FLOOR_SPRITE,
-    })
+        "next_xp": xp_to_next(char.level, cfg.xp_base, cfg.xp_growth),
+    }
+    # If a battle is in progress, hand the template the fight so it can show the
+    # Pokémon-style overlay on top of the map.
+    fight, _ = services.get_combat(request)
+    if fight:
+        ctx["fight"] = fight
+        ctx["potions"] = [e for e in fight.character.inventory
+                          if e.item.kind == "consumable" and e.quantity > 0]
+    return render(request, "world.html", ctx)
 
 
 @require_POST
 @login_required
 def move(request):
-    if request.session.get("combat"):
-        return redirect("game:combat")
+    if request.session.get("combat"):     # mid-battle: ignore movement
+        return redirect("game:world")
     result = services.do_move(request, request.POST.get("direction", ""))
     kind = result["kind"]
-    if kind == "monster":
-        return redirect("game:combat")
     if kind == "town":
         return redirect("game:town")
     if kind == "treasure":
         messages.success(request, f"You found {result['gold']} gold!")
+        if result.get("new_region"):
+            messages.success(request, "You collected all the treasure — a new region unfolds!")
+    # "encounter" / "moved" / "blocked" all return to the map (overlay shows for encounters)
     return redirect("game:world")
 
 
-# ----- combat -------------------------------------------------------------
+# ----- combat (rendered as an overlay on the world page) ------------------
 @login_required
 def combat_view(request):
-    fight, char = services.get_combat(request)
-    if not fight:
-        return redirect("game:world")
-    potions = [e for e in fight.character.inventory
-               if e.item.kind == "consumable" and e.quantity > 0]
-    return render(request, "combat.html",
-                  {"fight": fight, "char": char, "potions": potions})
+    # Combat now lives as an overlay on /play/; send any direct hits there.
+    return redirect("game:world")
 
 
 @require_POST
@@ -140,18 +144,14 @@ def combat_action(request):
         request, request.POST.get("action", ""), request.POST.get("item_key"))
     if fight is None:
         return redirect("game:world")
-    if not fight.is_over:
-        return redirect("game:combat")
-    if fight.outcome == "win":
-        gold, xp = fight.rewards()
-        messages.success(request, f"Victory! +{gold} gold, +{xp} XP.")
-        if getattr(fight, "area_cleared", False):
-            messages.success(request, "You cleared the whole area — a new region unfolds!")
-        return redirect("game:world")
-    if fight.outcome == "lose":
-        messages.error(request, "You were defeated and woke up in town (lost half your gold).")
-        return redirect("game:town")
-    messages.info(request, "You fled the battle.")
+    if fight.is_over:
+        if fight.outcome == "win":
+            gold, xp = fight.rewards()
+            messages.success(request, f"Victory! +{gold} gold, +{xp} XP.")
+        elif fight.outcome == "lose":
+            messages.error(request, "You were defeated and woke up in town (lost half your gold).")
+        else:
+            messages.info(request, "You fled the battle.")
     return redirect("game:world")
 
 
