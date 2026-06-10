@@ -52,8 +52,13 @@ edge — instead of flat fills. Real sprite tiles where we have them, layered CS
   train/raid). Only the *navigation and presentation* around it changes.
 
 ## Build order (each its own shippable slice)
-1. **World Map** — node model (positions + distance/travel time), the map page, travel
-   timers, and entering biomes/raids from it. Retire edge-tile biome connections.
+1. **World Map** — ✅ DONE (2026-06-10, slice 1). `engine/travel.py` (pure: distance +
+   `travel_seconds`, Castle at centre 50,50). `MapArea.world_x/world_y` + travel fields on
+   `Character` (migrations 0029/0030). Services `world_map_payload`/`start_travel`/`arrive`/
+   `travel_state`/`enter_castle`; raid targets carry map coords. `/map/` page (positioned
+   nodes, distance-based travel timers + JS countdown, Arrive button); nav "Map" + "Explore".
+   Biome arrival → enter the grid; raid arrival → resolve the raid. **Still TODO this slice:**
+   retire the old edge-tile biome connections (both work right now — map is additive).
 2. **Castle redraw + service modals** — drawn castle at map center; Market/Smithy/Tavern/
    Vault as modal buttons. Kill the walkable castle grid.
 3. **Village modals** — fixed building scene, tap → options modal; build-new modal.

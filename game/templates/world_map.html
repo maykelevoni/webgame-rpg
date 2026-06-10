@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Map — webgame-rpg{% endblock %}
+{% block content %}
+  <div class="panel">
+    <h1>🗺️ World Map</h1>
+
+    {% if travel.traveling %}
+      <div class="war-recovering" id="travel-banner">
+        🚶 Marching to <b>{{ travel.dest_name }}</b> —
+        <span id="travel-left" data-left="{{ travel.seconds_left }}">{{ travel.seconds_left }}</span>s left.
+        <form method="post" action="{% url 'game:arrive' %}" style="display:inline;">
+          {% csrf_token %}
+          <button id="arrive-btn" {% if not travel.arrived %}disabled{% endif %}>Arrive</button>
+        </form>
+      </div>
+    {% endif %}
+
+    <div class="world-map">
+      {# Castle — the centre / home base, no travel needed #}
+      <div class="wm-node wm-castle" style="left:{{ castle.x }}%; top:{{ castle.y }}%;">
+        <div class="wm-emoji">🏰</div>
+        <div class="wm-label">Castle</div>
+        <form method="post" action="{% url 'game:go_castle' %}">{% csrf_token %}
+          <button {% if travel.traveling and not travel.arrived %}disabled{% endif %}>Enter</button>
+        </form>
+      </div>
+
+      {% for n in nodes %}
+        <div class="wm-node wm-{{ n.kind }}" style="left:{{ n.x }}%; top:{{ n.y }}%;">
+          <div class="wm-emoji">{{ n.emoji }}</div>
+          <div class="wm-label">{{ n.name }}{% if n.kind == "raid" %} <small>🛡️{{ n.defense }}</small>{% endif %}</div>
+          <form method="post" action="{% url 'game:travel' %}">{% csrf_token %}
+            <input type="hidden" name="dest" value="{{ n.key }}">
+            <button {% if recovering or travel.traveling and not travel.arrived %}disabled{% endif %}>
+              {% if n.kind == "raid" %}Raid{% else %}Go{% endif %} · {{ n.travel_seconds }}s
+            </button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+
+    <p class="hint">Farther places take longer to march to. Biomes you explore on foot;
+      raid targets your army fights on arrival. Your Castle and Village are home base.</p>
+    <p style="text-align:center;">
+      <a class="btn secondary" href="{% url 'game:village' %}">🏠 Village</a>
+    </p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var el = document.getElementById("travel-left");
+    if (!el) return;
+    var left = parseInt(el.dataset.left, 10);
+    var btn = document.getElementById("arrive-btn");
+    var t = setInterval(function () {
+      left -= 1;
+      if (left <= 0) { el.textContent = "0"; if (btn) btn.disabled = false; clearInterval(t); }
+      else { el.textContent = left; }
+    }, 1000);
+  })();
+</script>
+{% endblock %}

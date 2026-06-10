@@ -118,6 +118,46 @@ def inventory_data(request):
     return JsonResponse(services.inventory_payload(request.user))
 
 
+# ----- world map (strategic hub) ------------------------------------------
+@login_required
+def world_map_view(request):
+    char = get_current_player(request)
+    if not char:
+        return redirect("game:character_create")
+    return render(request, "world_map.html",
+                  {"char": char, **services.world_map_payload(request.user)})
+
+
+@require_POST
+@login_required
+def travel(request):
+    r = services.start_travel(request.user, request.POST.get("dest", ""))
+    messages.info(request, r.get("error") or r.get("message"))
+    return redirect("game:world_map")
+
+
+@require_POST
+@login_required
+def arrive(request):
+    r = services.arrive(request.user)
+    if "error" in r:
+        messages.info(request, r["error"])
+        return redirect("game:world_map")
+    if r.get("kind") == "area":
+        messages.success(request, f"You arrive at {r['area_name']}.")
+        return redirect("game:world")              # into the biome grid
+    # a raid resolved on arrival — show its result, stay on the map
+    messages.info(request, r.get("message") or "Raid resolved.")
+    return redirect("game:world_map")
+
+
+@require_POST
+@login_required
+def go_castle(request):
+    services.enter_castle(request.user)
+    return redirect("game:world")
+
+
 # ----- world / movement ---------------------------------------------------
 @login_required
 def world_view(request):

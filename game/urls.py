@@ -17,6 +17,12 @@ urlpatterns = [
     path("character/use-item/", views.use_item, name="use_item"),
     path("character/inventory/data/", views.inventory_data, name="inventory_data"),
 
+    # world map (strategic hub)
+    path("map/", views.world_map_view, name="world_map"),
+    path("map/travel/", views.travel, name="travel"),
+    path("map/arrive/", views.arrive, name="arrive"),
+    path("map/castle/", views.go_castle, name="go_castle"),
+
     # world / movement
     path("play/", views.world_view, name="world"),
     path("play/move/", views.move, name="move"),

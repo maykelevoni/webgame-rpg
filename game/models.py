@@ -91,6 +91,10 @@ class Character(models.Model):
     # When set and in the future, the hero fell leading a raid and is laid up — he
     # can't explore or raid until this passes (see services.hero_recovery).
     recovering_until = models.DateTimeField(null=True, blank=True)
+    # World Map travel: a journey in progress. `travel_dest_key` is an area key OR a
+    # raid-target key; on arrival we enter the area or resolve the raid.
+    travel_dest_key = models.CharField(max_length=40, blank=True)
+    travel_arrive_at = models.DateTimeField(null=True, blank=True)
 
     # World state. `pos_x`/`pos_y` are the position *within the current area*.
     # `area_state` holds per-area exploration state, keyed by area key:
@@ -252,6 +256,10 @@ class MapArea(models.Model):
     seed = models.BigIntegerField(default=1, help_text="Layout seed for surface areas")
     size = models.PositiveIntegerField(default=12)
     is_start = models.BooleanField(default=False, help_text="Where new characters begin")
+    # Position on the strategic World Map (0-100 each axis; Castle is the centre ~50,50).
+    # Distance from the centre sets travel time to reach this area.
+    world_x = models.PositiveIntegerField(default=50)
+    world_y = models.PositiveIntegerField(default=50)
 
     def __str__(self):
         return self.name

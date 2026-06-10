@@ -28,6 +28,8 @@ class RaidTarget:
     loot_gold: int
     loot: dict                # resource -> amount granted on a win
     emoji: str = "🏚️"
+    world_x: int = 50         # position on the strategic World Map
+    world_y: int = 50
 
 
 @dataclass

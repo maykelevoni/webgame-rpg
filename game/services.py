@@ -27,6 +27,7 @@ from engine.monsters import pick_monster
 from engine.plugins import load_plugins
 from engine import refine as refine_engine
 from engine import army as army_engine
+from engine import travel as travel_engine
 from engine.world import EMPTY, MOVED, TOWN, TREASURE, World
 from engine import maps as maps_engine
 from engine.maps import BiomeMap, MapMonster, biome_spec
@@ -815,11 +816,14 @@ TRAIN_BATCH_PER_LEVEL = 5
 # they're plain data, so moving them to admin-editable rows later is trivial.
 RAID_TARGETS = [
     army_engine.RaidTarget("bandit-camp", "Bandit Camp", defense=45,
-                           loot_gold=60, loot={"meat": 20, "wood": 20}, emoji="⛺"),
+                           loot_gold=60, loot={"meat": 20, "wood": 20}, emoji="⛺",
+                           world_x=64, world_y=34),
     army_engine.RaidTarget("coastal-hamlet", "Coastal Village", defense=120,
-                           loot_gold=160, loot={"wood": 40, "stone": 30, "iron": 10}, emoji="🛖"),
+                           loot_gold=160, loot={"wood": 40, "stone": 30, "iron": 10}, emoji="🛖",
+                           world_x=80, world_y=44),
     army_engine.RaidTarget("rival-jarl", "Enemy Fort", defense=260,
-                           loot_gold=380, loot={"stone": 60, "iron": 30}, emoji="🏯"),
+                           loot_gold=380, loot={"stone": 60, "iron": 30}, emoji="🏯",
+                           world_x=24, world_y=78),
 ]
 RAID_TARGETS_BY_KEY = {t.key: t for t in RAID_TARGETS}
 
@@ -950,6 +954,112 @@ def do_raid(user, target_key: str) -> dict:
         "message": result.message, "gold": model.gold,
         **army_payload(user),
     }
+
+
+# --------------------------------------------------------------------------
+# World Map — the strategic hub (travel to areas / raid targets by distance)
+# --------------------------------------------------------------------------
+BIOME_EMOJI = {"grass": "🌲", "desert": "🏜️", "ice": "❄️", "dungeon": "🕳️", "city": "🏰"}
+
+
+def _now_utc() -> datetime.datetime:
+    return datetime.datetime.now(tz=datetime.timezone.utc)
+
+
+def _world_nodes() -> dict[str, dict]:
+    """Every travel destination keyed by key. Biomes (the explorable areas, minus the
+    central Castle) + raid targets. Each carries its World-Map position."""
+    nodes: dict[str, dict] = {}
+    for a in MapArea.objects.exclude(key=SETTLEMENT_KEY):
+        nodes[a.key] = {"key": a.key, "name": a.name, "x": a.world_x, "y": a.world_y,
+                        "kind": "biome", "emoji": BIOME_EMOJI.get(a.biome, "🗺️")}
+    for t in RAID_TARGETS:
+        nodes[t.key] = {"key": t.key, "name": t.name, "x": t.world_x, "y": t.world_y,
+                        "kind": "raid", "emoji": t.emoji, "defense": t.defense}
+    return nodes
+
+
+def travel_state(model: Character) -> dict:
+    """The hero's current journey, if any."""
+    if not model.travel_arrive_at or not model.travel_dest_key:
+        return {"traveling": False, "arrived": False, "seconds_left": 0, "dest_key": ""}
+    left = (model.travel_arrive_at - _now_utc()).total_seconds()
+    return {"traveling": True, "arrived": left <= 0, "seconds_left": max(0, int(left)),
+            "dest_key": model.travel_dest_key}
+
+
+def world_map_payload(user) -> dict:
+    """Nodes (with travel times) + the hero's travel/recovery state for the map page."""
+    model = Character.objects.get(owner=user)
+    nodes = list(_world_nodes().values())
+    for n in nodes:
+        n["travel_seconds"] = travel_engine.travel_seconds(n["x"], n["y"])
+    st = travel_state(model)
+    if st["traveling"]:
+        st["dest_name"] = _world_nodes().get(st["dest_key"], {}).get("name", "?")
+    return {
+        "center": list(travel_engine.CENTER),
+        "castle": {"key": SETTLEMENT_KEY, "name": "Castle", "x": 50, "y": 50},
+        "nodes": nodes,
+        "travel": st,
+        "recovering": hero_recovery(model)["recovering"],
+    }
+
+
+@transaction.atomic
+def start_travel(user, dest_key: str) -> dict:
+    """Begin a march to a node; arrival time scales with its distance from the Castle."""
+    model = Character.objects.select_for_update().get(owner=user)
+    if hero_recovery(model)["recovering"]:
+        return {"error": "You're recovering and can't travel yet."}
+    st = travel_state(model)
+    if st["traveling"] and not st["arrived"]:
+        return {"error": "You're already marching somewhere."}
+    node = _world_nodes().get(dest_key)
+    if not node:
+        return {"error": "No such destination."}
+    secs = travel_engine.travel_seconds(node["x"], node["y"])
+    model.travel_dest_key = dest_key
+    model.travel_arrive_at = _now_utc() + datetime.timedelta(seconds=secs)
+    model.save(update_fields=["travel_dest_key", "travel_arrive_at"])
+    return {"message": f"Marching to {node['name']} — {secs}s.",
+            "seconds": secs, "dest_key": dest_key, "dest_name": node["name"]}
+
+
+@transaction.atomic
+def arrive(user) -> dict:
+    """Resolve the end of a march: enter a biome, or fight a raid."""
+    model = Character.objects.select_for_update().get(owner=user)
+    st = travel_state(model)
+    if not st["traveling"]:
+        return {"error": "You're not travelling."}
+    if not st["arrived"]:
+        return {"error": f"Still marching ({st['seconds_left']}s left)."}
+    dest_key = model.travel_dest_key
+    model.travel_dest_key = ""
+    model.travel_arrive_at = None
+    model.save(update_fields=["travel_dest_key", "travel_arrive_at"])
+
+    if dest_key in RAID_TARGETS_BY_KEY:
+        return {"kind": "raid", **do_raid(user, dest_key)}
+
+    area = MapArea.objects.filter(key=dest_key).first()
+    if not area:
+        return {"error": "That place is gone."}
+    model.current_area = area
+    model.area_state.setdefault(area.key, {})
+    dm = build_biome_map(model, area, fresh=True)
+    save_area_map(model, area, dm)
+    return {"kind": "area", "area_key": area.key, "area_name": area.name}
+
+
+def enter_castle(user) -> None:
+    """Go home to the Castle (the central hub) — no travel needed."""
+    model = Character.objects.get(owner=user)
+    castle = MapArea.objects.filter(key=SETTLEMENT_KEY).first()
+    if castle:
+        model.current_area = castle
+        model.save(update_fields=["current_area"])
 
 
 def build_village_grid(state: VillageState, defs: dict[str, BuildingDef]) -> dict:

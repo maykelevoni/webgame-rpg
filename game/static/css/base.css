@@ -211,6 +211,24 @@ h1, h2, h3 { line-height: 1.2; }
 .shop-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .shop-table td { padding: .2rem .3rem; border-bottom: 1px solid var(--tile-empty); }
 .shop-table button { padding: .1rem .5rem; font-size: .8rem; }
+/* World Map — strategic hub with positioned nodes */
+.world-map {
+  position: relative; width: 100%; max-width: 560px; aspect-ratio: 1; margin: 1rem auto;
+  border: 1px solid var(--tile-empty); border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(120,150,90,.20), rgba(40,50,40,.30) 70%),
+    repeating-linear-gradient(0deg, transparent 0 39px, rgba(255,255,255,.04) 39px 40px),
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(255,255,255,.04) 39px 40px);
+}
+.wm-node {
+  position: absolute; transform: translate(-50%, -50%); width: 92px; text-align: center;
+}
+.wm-emoji { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px #000); }
+.wm-castle .wm-emoji { font-size: 42px; }
+.wm-label { font-size: .72rem; margin: 1px 0 2px; white-space: nowrap; }
+.wm-node button { font-size: .68rem; padding: .12rem .45rem; }
+.wm-raid .wm-label small { color: #ff8a8a; }
+
 /* War Camp (village army/raiding panel) */
 .war-camp { margin-top: 1rem; }
 .war-camp h3 { margin: .6rem 0 .3rem; }
