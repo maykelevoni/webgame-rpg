@@ -259,14 +259,15 @@ CONNECTION_KINDS = [
     ("hole", "Hole with stairs"),
     ("stairs", "Stairs"),
     ("portal", "Portal"),
-    ("town", "To town (menu)"),
+    ("town", "Town gate (🏠)"),
 ]
 
 
 class MapConnection(models.Model):
-    """A one-way link out of an area. ``to_area`` is the destination; when ``kind``
-    is 'town' (and ``to_area`` is blank) it routes to the existing town menu. A
-    'hole'/'stairs' into a dungeon descends to a freshly generated level."""
+    """A one-way link out of an area. ``to_area`` is the destination (the 'town'
+    kind just supplies the 🏠 gate icon — it still enters its ``to_area``). A
+    'hole'/'stairs' into a dungeon descends to a freshly generated level. A
+    connection with no ``to_area`` is an inert dead end."""
     from_area = models.ForeignKey(MapArea, on_delete=models.CASCADE,
                                   related_name="exits")
     to_area = models.ForeignKey(MapArea, null=True, blank=True,

@@ -206,14 +206,28 @@ A safe gold stash so the death penalty (half **carried** gold) doesn't wipe ever
 - Verified via the dev DB: deposit-all → withdraw, overdraw rejected, gold conserved.
   56 tests green (vault is DB-backed; the pure-engine suite is unchanged).
 
+### 11. Phase 2b — gate-return + retire `/town/` — DONE (2026-06-10)
+- **Gate returns you to the tile you entered from.** `_use_connection` now records the
+  origin tile on the destination's `area_state` (`return_to`) and, when you walk back,
+  drops you on that tile (if still walkable) instead of the area's default start. Verified
+  with the test client: enter the settlement from Greenwood's 🏠 tile (6,11) → leave via
+  the gate → back at (6,11).
+- **`/town/` retired.** It was orphaned (not in nav; the world 🏠 enters the Castle now),
+  so it was dead UI. Removed `town.html`, `town_view`/`town_action`/`leave_town` (views +
+  the `leave_town` service), and the `town`/`town_action`/`leave_town` routes. The no-JS
+  `rest` and dead-end-connection fallbacks now go to the world (a connection with no
+  `to_area` returns `kind:"blocked"`, not `"town"`). `shop.html`'s "Back to town" link →
+  the world. The `MapConnection` `town` kind survives only as the 🏠 gate **icon**.
+  Note: the plugin `add_town_action` registry API still exists but is now **unsurfaced**
+  (no UI host) — relocate to a Castle station if town-actions are wanted again.
+
 ## What's NEXT (queued, NOT built)
 
-### Village Phase 2b — *Walk/Build on one map* (the agreed next step)
-- A **Walk/Build mode toggle** on the settlement map: Build mode reuses the existing
-  placement/upgrade flow (the `/village/` palette) directly on the walkable grid.
-- **Retire the separate `/town/` and `/village/` pages** once Build mode covers them.
-- Make the settlement gate return you to the **🏠 tile** you came from (today it drops
-  you at Greenwood's centre via the normal `fresh=True` entry).
+### Village Phase 2b leftovers
+- **Walk/Build toggle / walkable village** — *intentionally deferred.* The Castle is now
+  the walkable hub and the top-down `/village/` build grid is the better placement UX, so
+  making the village walkable would partly undo the §6 Castle/Village split. `/village/`
+  stays as the build screen (NOT retired).
 
 ### Other open tracks
 - **Exploration slice 2**: more biomes (desert/ice/forest), the named overworld graph

@@ -521,29 +521,6 @@ def _refresh_if_cleared(model: Character, cfg: EngineConfig) -> bool:
     return True
 
 
-def leave_town(user) -> None:
-    """Step the player out of town onto an adjacent tile (so the town stays visible)."""
-    model = Character.objects.get(owner=user)
-    cfg = load_config()
-    world = get_world(model, cfg)
-    tx, ty = world.town
-    # Prefer an empty neighbour; fall back to any in-bounds neighbour.
-    neighbours = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
-    best = None
-    for dx, dy in neighbours:
-        nx, ny = tx + dx, ty + dy
-        if not world.in_bounds(nx, ny):
-            continue
-        if best is None:
-            best = (nx, ny)
-        if world.tile_type(nx, ny) == EMPTY:
-            best = (nx, ny)
-            break
-    if best:
-        model.pos_x, model.pos_y = best
-        model.save()
-
-
 def rest(user) -> str:
     model = Character.objects.get(owner=user)
     cfg = load_config()
@@ -1115,10 +1092,10 @@ def _use_connection(model: Character, area: MapArea, conn_id: str) -> dict:
     """Follow an exit: route to town, or enter another area (descending regenerates)."""
     conn = MapConnection.objects.filter(
         id=int(conn_id), from_area=area).select_related("to_area").first()
-    # A connection with no destination still routes to the legacy town menu; one
-    # with a destination (including the 🏠 settlement) enters that area.
+    # A dead-end connection (no destination) is a no-op; any real exit — including
+    # the 🏠 settlement link — enters its destination area.
     if not conn or conn.to_area is None:
-        return {"kind": "town"}
+        return {"kind": "blocked"}
     dest = conn.to_area
 
     # Where were we when we triggered this exit? (do_move just saved pos onto the

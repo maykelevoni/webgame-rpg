@@ -79,7 +79,6 @@
     post(cfg.moveUrl, { direction }).then((data) => {
       busy = false;
       if (data.combat) { window.location.reload(); return; }   // into the combat overlay
-      if (data.town) { openMarket(); return; }
       if (data.building) { useBuilding(data.building); return; }  // bumped a settlement building
       repaint(data);
       updateHud(data);

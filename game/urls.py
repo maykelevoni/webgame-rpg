@@ -32,11 +32,8 @@ urlpatterns = [
     path("village/place/", views.village_place, name="village_place"),
     path("village/upgrade/", views.village_upgrade, name="village_upgrade"),
 
-    # town / shop
-    path("town/", views.town_view, name="town"),
-    path("town/action/", views.town_action, name="town_action"),
+    # shop / castle services
     path("town/rest/", views.rest, name="rest"),
-    path("town/leave/", views.leave_town, name="leave_town"),
     path("town/shop/", views.shop_view, name="shop"),
     path("town/shop/data/", views.shop_data, name="shop_data"),
     path("town/shop/buy/", views.buy, name="buy"),

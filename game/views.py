@@ -161,8 +161,6 @@ def move(request):
 
     if not ajax:
         # No-JS fallback: harvest instantly (no mini-game), message + redirect.
-        if kind == "town":
-            return redirect("game:town")
         if kind == "building":
             key = result["building"]
             if key == "market":
@@ -186,8 +184,6 @@ def move(request):
     # explore.js: paint the result in place — no full reload.
     if kind == "encounter":
         return JsonResponse({"combat": True})
-    if kind == "town":
-        return JsonResponse({"town": True})
     if kind == "building":
         return JsonResponse({"building": result["building"]})
 
@@ -285,33 +281,7 @@ def combat_action(request):
     return redirect("game:world")
 
 
-# ----- town / shop --------------------------------------------------------
-@login_required
-def town_view(request):
-    char = get_current_player(request)
-    if not char:
-        return redirect("game:character_create")
-    registry = services.get_active_plugins()
-    return render(request, "town.html",
-                  {"char": char, "plugin_actions": list(registry.town_actions.keys())})
-
-
-@require_POST
-@login_required
-def town_action(request):
-    """Run a plugin-provided town action (e.g. the example 'Pray at Shrine')."""
-    label = request.POST.get("label", "")
-    registry = services.get_active_plugins()
-    handler = registry.town_actions.get(label)
-    if handler:
-        model = get_current_player(request)
-        engine_char = services.character_to_engine(model, services.load_catalog())
-        result_message = handler(engine_char)
-        services.save_engine_character(engine_char, model)
-        messages.info(request, result_message or f"{label}.")
-    return redirect("game:town")
-
-
+# ----- shop / castle services ---------------------------------------------
 @require_POST
 @login_required
 def rest(request):
@@ -319,7 +289,7 @@ def rest(request):
     if _is_ajax(request):
         return JsonResponse({"message": msg, **services.shop_payload(request.user)})
     messages.info(request, msg)
-    return redirect("game:town")
+    return redirect("game:world")
 
 
 @login_required
@@ -357,13 +327,6 @@ def vault_move(request):
         request.user, request.POST.get("action", ""), request.POST.get("amount"))
     status = 400 if "error" in result else 200
     return JsonResponse(result, status=status)
-
-
-@require_POST
-@login_required
-def leave_town(request):
-    services.leave_town(request.user)
-    return redirect("game:world")
 
 
 @login_required
