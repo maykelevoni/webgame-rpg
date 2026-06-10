@@ -232,6 +232,29 @@ Extended the overworld into a short progression chain off Greenwood:
 - Verified: both areas generate 5 biome-appropriate monsters; full round-trip
   traversal Greenwood→Dunes→Frostvale→back works; 56 tests green.
 
+### 13. Army + raiding (village slice 2, first slice) — DONE (2026-06-10)
+The Viking second loop's combat half — train a warband and raid NPC villages:
+- **Engine** `engine/army.py` (pure): `RaidTarget`, `warband_power` (troops×6 + hero
+  attack — the hero personally leads), `resolve_raid` (power-vs-defense + luck roll →
+  win/loss, casualties scale with how outmatched you were, **only survivors return**,
+  hero can fall **only on a loss** — likelier if the warband is wiped). `train_cost`.
+  `engine/village.py` now carries `troops` + **meat upkeep**: warriors eat meat each
+  tick (`UPKEEP_MEAT_PER_MIN`); if stores run dry the unfed **desert** (don't die).
+  `food_balance` = production − upkeep. Tests `tests/test_army.py` (8).
+- **Models/migrations**: `Village.troops`, `Character.recovering_until` (0026); seeded
+  **Barracks** military BuildingType (req Longhouse Lv 3, 0027).
+- **Bridge** `services.py`: troops round-trip; `train_troops` (meat cost, gated by a
+  built Barracks + its level batch cap), `do_raid` (casualties → survivors, loot on a
+  win, hero death → `recovering_until` + half gold + half HP), `army_context`/
+  `army_payload`, `hero_recovery` (auto-clears). **Recovering hero is blocked from
+  exploring** (guard in the `move` view + a banner on `/play/`).
+- **UI**: a **War Camp** panel on `/village/` (server-rendered, no-JS): warband/power/
+  upkeep, a Train form (gated by the Barracks), and a tiered raid list (Bandit Camp →
+  Coastal Hamlet → Rival Jarl's Hall) with ⚠ when you're under-powered. `RAID_TARGETS`
+  are hardcoded data for now (trivial to move to admin rows later).
+- Verified on the dev DB (train 10 → raid → win, 8 survived, +60 gold; recovery blocks
+  movement) and in-browser (War Camp renders). 64 tests green.
+
 ## What's NEXT (queued, NOT built)
 
 ### Village Phase 2b leftovers
@@ -244,8 +267,9 @@ Extended the overworld into a short progression chain off Greenwood:
 - **Exploration slice 2+**: desert + ice DONE (§12). Remaining: a forest biome,
   dungeon **depth scaling** (deeper Old Mine levels get tougher), and a named
   overworld graph editable in admin.
-- **Village slice 2**: army (Barracks) + longships (Shipyard) + **raiding NPC villages**
-  (reuse combat engine) + **thralls** (capture vs. slaughter). Then async PvP last.
+- **Village slice 2**: Barracks + troops + raiding DONE (§13). Remaining: **longships**
+  (Shipyard gating raid range), **thralls** (capture vs. slaughter → production labor),
+  walls/defense + retaliation, then async **PvP** (raid real players — same data shape).
 - **Combat polish**: hit-flash + floating damage numbers DONE (§ commit 87d1fd9).
   Still open: crit/miss feedback, status effects.
 - **Food upkeep** consequence (troops desert) — deferred until army exists.

@@ -26,6 +26,7 @@ from engine.monsters import Monster as EngineMonster
 from engine.monsters import pick_monster
 from engine.plugins import load_plugins
 from engine import refine as refine_engine
+from engine import army as army_engine
 from engine.world import EMPTY, MOVED, TOWN, TREASURE, World
 from engine import maps as maps_engine
 from engine.maps import BiomeMap, MapMonster, biome_spec
@@ -710,7 +711,8 @@ def village_to_engine(village: Village) -> VillageState:
     """Build an engine VillageState (with placed buildings) from the DB rows."""
     state = VillageState(
         wood=village.wood, stone=village.stone, meat=village.meat,
-        iron=village.iron, last_tick=village.last_tick.timestamp(),
+        iron=village.iron, troops=village.troops,
+        last_tick=village.last_tick.timestamp(),
     )
     for row in village.buildings.select_related("type").all():
         state.buildings.append(PlacedBuilding(
@@ -724,6 +726,7 @@ def save_village(state: VillageState, village: Village) -> None:
     """Write an engine VillageState back to the DB (resources, tick, building levels)."""
     village.wood, village.stone, village.meat = state.wood, state.stone, state.meat
     village.iron = state.iron
+    village.troops = state.troops
     village.last_tick = _from_ts(state.last_tick)
     village.save()
     by_id = {b.id: b for b in state.buildings if b.id is not None}
@@ -799,6 +802,156 @@ def upgrade_building(character: Character, building_id: int) -> str:
     return f"Upgrading {bdef.name} to Lv {target}."
 
 
+# --------------------------------------------------------------------------
+# Army / raiding (see engine/army.py and docs/village-design.md)
+# --------------------------------------------------------------------------
+BARRACKS_KEY = "barracks"
+
+# How many warriors you may train in one go, per built Barracks level. (The
+# Barracks must be built — Lv >= 1 — to train at all.) Balance is tunable here.
+TRAIN_BATCH_PER_LEVEL = 5
+
+# Raid targets — NPC camps/villages, tiered by defense. Hardcoded for this slice;
+# they're plain data, so moving them to admin-editable rows later is trivial.
+RAID_TARGETS = [
+    army_engine.RaidTarget("bandit-camp", "Bandit Camp", defense=45,
+                           loot_gold=60, loot={"meat": 20, "wood": 20}, emoji="⛺"),
+    army_engine.RaidTarget("coastal-hamlet", "Coastal Hamlet", defense=120,
+                           loot_gold=160, loot={"wood": 40, "stone": 30, "iron": 10}, emoji="🛖"),
+    army_engine.RaidTarget("rival-jarl", "Rival Jarl's Hall", defense=260,
+                           loot_gold=380, loot={"stone": 60, "iron": 30}, emoji="🏯"),
+]
+RAID_TARGETS_BY_KEY = {t.key: t for t in RAID_TARGETS}
+
+# How long the hero is laid up after falling in a raid (seconds).
+HERO_RECOVERY_SECONDS = 5 * 60
+
+
+def _has_built_barracks(state: VillageState) -> int:
+    """Highest completed Barracks level in the village (0 if none built yet)."""
+    return max((b.level for b in state.buildings
+                if b.key == BARRACKS_KEY and b.level > 0), default=0)
+
+
+def hero_recovery(model: Character) -> dict:
+    """Is the hero laid up recovering from a raid? Auto-clears once the timer has
+    passed. Returns {recovering: bool, seconds_left: int}."""
+    until = model.recovering_until
+    if not until:
+        return {"recovering": False, "seconds_left": 0}
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    if until <= now:
+        model.recovering_until = None
+        model.save(update_fields=["recovering_until", "updated_at"])
+        return {"recovering": False, "seconds_left": 0}
+    return {"recovering": True, "seconds_left": int((until - now).total_seconds())}
+
+
+def army_context(model: Character, state: VillageState) -> dict:
+    """Warband state + raid targets (with your power vs. each defense), built from an
+    already-synced ``state`` (so the village page can reuse its tick)."""
+    barracks_lv = _has_built_barracks(state)
+    char = character_to_engine(model, load_catalog())
+    hero_atk = char.effective_attack()
+    power = army_engine.warband_power(state.troops, hero_atk)
+    rec = hero_recovery(model)
+    targets = [{
+        "key": t.key, "name": t.name, "emoji": t.emoji, "defense": t.defense,
+        "loot_gold": t.loot_gold, "loot": t.loot,
+        "winnable": power >= t.defense,           # rough guide (ignores the luck roll)
+    } for t in RAID_TARGETS]
+    return {
+        "troops": state.troops, "meat": state.meat,
+        "hero_attack": hero_atk, "power": power,
+        "barracks_level": barracks_lv,
+        "train_cost_each": army_engine.TRAIN_MEAT_COST,
+        "max_train": barracks_lv * TRAIN_BATCH_PER_LEVEL,
+        "upkeep_per_min": round(army_engine.UPKEEP_MEAT_PER_MIN * state.troops, 2),
+        "recovering": rec["recovering"], "recovery_seconds": rec["seconds_left"],
+        "targets": targets,
+    }
+
+
+def army_payload(user) -> dict:
+    """Army context for AJAX callers (syncs the village first)."""
+    model = Character.objects.get(owner=user)
+    state, _defs, _ev = sync_village(model)
+    return army_context(model, state)
+
+
+@transaction.atomic
+def train_troops(user, count: int) -> dict:
+    """Train ``count`` warriors at the Barracks, spending meat. Gated by a built
+    Barracks and its level (the training batch cap)."""
+    model = Character.objects.select_for_update().get(owner=user)
+    state, _defs, _ev = sync_village(model)
+    barracks_lv = _has_built_barracks(state)
+    if barracks_lv <= 0:
+        return {"error": "Build a Barracks first to train warriors."}
+    count = max(0, int(count))
+    if count <= 0:
+        return {"error": "Train at least one warrior."}
+    cap = barracks_lv * TRAIN_BATCH_PER_LEVEL
+    if count > cap:
+        return {"error": f"Your Barracks (Lv {barracks_lv}) can train at most {cap} at once."}
+    cost = army_engine.train_cost(count)
+    village = model.village
+    village.refresh_from_db()
+    if village.meat < cost:
+        return {"error": f"Need {cost} 🍖 meat to train {count} (have {village.meat})."}
+    village.meat -= cost
+    village.troops += count
+    village.save(update_fields=["meat", "troops"])
+    return {"message": f"Trained {count} warrior{'s' if count != 1 else ''} "
+                       f"(−{cost} 🍖).", **army_payload(user)}
+
+
+@transaction.atomic
+def do_raid(user, target_key: str) -> dict:
+    """Lead the warband on a raid. Applies casualties (only survivors return), loot
+    on a win, and — if the hero falls — lays him up to recover."""
+    model = Character.objects.select_for_update().get(owner=user)
+    rec = hero_recovery(model)
+    if rec["recovering"]:
+        return {"error": "You're still recovering from your last raid."}
+    target = RAID_TARGETS_BY_KEY.get(target_key)
+    if not target:
+        return {"error": "No such raid target."}
+    state, _defs, _ev = sync_village(model)
+    if state.troops <= 0:
+        return {"error": "You have no warriors to raid with — train some first."}
+
+    char = character_to_engine(model, load_catalog())
+    result = army_engine.resolve_raid(state.troops, char.effective_attack(),
+                                      target, random.Random())
+
+    village = model.village
+    village.refresh_from_db()
+    village.troops = result.survivors
+    if result.win:
+        model.gold += result.loot_gold
+        cap = village_engine.storage_cap(state, _defs)
+        for res, amt in result.loot.items():
+            setattr(village, res, min(cap, getattr(village, res) + amt))
+    village.save()
+
+    if result.hero_died:
+        model.gold //= 2                           # same sting as an overworld death
+        model.hp = max(1, model.max_hp // 2)
+        model.recovering_until = (datetime.datetime.now(tz=datetime.timezone.utc)
+                                  + datetime.timedelta(seconds=HERO_RECOVERY_SECONDS))
+    model.save()
+
+    return {
+        "win": result.win, "hero_died": result.hero_died,
+        "troops_sent": result.troops_sent, "survivors": result.survivors,
+        "troops_lost": result.troops_lost,
+        "loot_gold": result.loot_gold, "loot": result.loot,
+        "message": result.message, "gold": model.gold,
+        **army_payload(user),
+    }
+
+
 def build_village_grid(state: VillageState, defs: dict[str, BuildingDef]) -> dict:
     """Cells for the village template: buildings (with footprint span + status) and
     empty placeable tiles, each carrying explicit grid coordinates."""
@@ -853,6 +1006,7 @@ def village_overview(character: Character) -> dict:
         "food_net": village_engine.food_balance(state, defs),
         "longhouse_level": lh,
         "rank": village_engine.rank_title(lh),
+        "army": army_context(character, state),
     }
 
 

@@ -22,6 +22,11 @@
       </div>
     </div>
 
+    {% if recovery.recovering %}
+      <p class="war-recovering">🤕 You're recovering from your last raid — you can't
+        explore for ~{{ recovery.seconds_left }}s. Rest at the village meanwhile.</p>
+    {% endif %}
+
     {% if no_area %}
       <p class="hint">No areas exist yet — run <code>migrate</code> to seed the world.</p>
     {% else %}

@@ -88,6 +88,9 @@ class Character(models.Model):
     # Gold stashed at the Castle Vault — safe from the death penalty (which only
     # halves *carried* gold). Deposit/withdraw at the 💰 station.
     vault_gold = models.PositiveIntegerField(default=0)
+    # When set and in the future, the hero fell leading a raid and is laid up — he
+    # can't explore or raid until this passes (see services.hero_recovery).
+    recovering_until = models.DateTimeField(null=True, blank=True)
 
     # World state. `pos_x`/`pos_y` are the position *within the current area*.
     # `area_state` holds per-area exploration state, keyed by area key:
@@ -205,6 +208,7 @@ class Village(models.Model):
     stone = models.PositiveIntegerField(default=0)
     meat = models.PositiveIntegerField(default=0)
     iron = models.PositiveIntegerField(default=0)
+    troops = models.PositiveIntegerField(default=0)   # trained warband for raids
     last_tick = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

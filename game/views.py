@@ -130,6 +130,7 @@ def world_view(request):
         "char": char, "area": area,
         "floor_sprite": services.FLOOR_SPRITE,
         "next_xp": xp_to_next(char.level, cfg.xp_base, cfg.xp_growth),
+        "recovery": services.hero_recovery(char),
     }
     if area is None:
         ctx["no_area"] = True
@@ -155,6 +156,15 @@ def move(request):
     ajax = _is_ajax(request)
     if request.session.get("combat"):     # mid-battle: ignore movement
         return JsonResponse({"combat": True}) if ajax else redirect("game:world")
+
+    rec = services.hero_recovery(get_current_player(request))
+    if rec["recovering"]:                 # downed in a raid: can't explore yet
+        msg = f"You're still recovering from your last raid ({rec['seconds_left']}s left)."
+        if ajax:
+            return JsonResponse({"recovering": True, "message": msg,
+                                 "seconds_left": rec["seconds_left"]})
+        messages.info(request, msg)
+        return redirect("game:world")
 
     result = services.do_move(request, request.POST.get("direction", ""))
     kind = result["kind"]
@@ -383,6 +393,30 @@ def village_upgrade(request):
         return redirect("game:character_create")
     messages.info(request, services.upgrade_building(
         char, _int(request.POST.get("building_id"), 0)))
+    return redirect("game:village")
+
+
+@require_POST
+@login_required
+def village_train(request):
+    """Train warriors at the Barracks (spends meat)."""
+    char = get_current_player(request)
+    if not char:
+        return redirect("game:character_create")
+    r = services.train_troops(request.user, _int(request.POST.get("count"), 0))
+    messages.info(request, r.get("error") or r.get("message"))
+    return redirect("game:village")
+
+
+@require_POST
+@login_required
+def village_raid(request):
+    """Lead the warband on a raid against an NPC target."""
+    char = get_current_player(request)
+    if not char:
+        return redirect("game:character_create")
+    r = services.do_raid(request.user, request.POST.get("target", ""))
+    messages.info(request, r.get("error") or r.get("message"))
     return redirect("game:village")
 
 

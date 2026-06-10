@@ -13,7 +13,10 @@ function here is deterministic and unit-testable. The bridge
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
+
+from engine.army import UPKEEP_MEAT_PER_MIN
 
 # --- resources -------------------------------------------------------------
 WOOD = "wood"
@@ -128,6 +131,7 @@ class VillageState:
     stone: int = 0
     meat: int = 0
     iron: int = 0
+    troops: int = 0                 # trained warriors (the warband for raids)
     last_tick: float = 0.0
     buildings: list[PlacedBuilding] = field(default_factory=list)
 
@@ -219,10 +223,15 @@ def production_rates(state: VillageState, defs: dict[str, BuildingDef]) -> dict[
     return rates
 
 
+def troop_upkeep_per_min(state: VillageState) -> float:
+    """Meat the warband eats per minute."""
+    return UPKEEP_MEAT_PER_MIN * max(0, state.troops)
+
+
 def food_balance(state: VillageState, defs: dict[str, BuildingDef]) -> int:
-    """Net meat per minute. Consumption (troop/population upkeep) lands in slice 2,
-    so for now this is just meat production — the calc is wired and displayed."""
-    return production_rates(state, defs)[MEAT]  # minus upkeep, later
+    """Net meat per minute: production minus the warband's food upkeep. If this is
+    negative the village is starving and troops will desert over time."""
+    return int(production_rates(state, defs)[MEAT] - troop_upkeep_per_min(state))
 
 
 # --- the one mechanic that happens on its own over time --------------------
@@ -245,6 +254,25 @@ def tick(state: VillageState, defs: dict[str, BuildingDef], now: float) -> list[
             after = min(cap, before + int(rate * minutes))
             if after > before:
                 state.set(res, after)
+
+    # 1b) Feed the warband. Each warrior eats meat every minute; if the stores run
+    #     out the unfed warriors desert (they leave — they don't drop dead), and the
+    #     meat floors at zero. Gentle, time-based: it punishes idle army-spam.
+    if state.troops > 0 and elapsed > 0:
+        minutes = elapsed / 60.0
+        need = troop_upkeep_per_min(state) * minutes      # meat the warband wants
+        have = state.get(MEAT)
+        if need <= have:
+            state.set(MEAT, have - int(round(need)))
+        else:
+            per_troop = max(1e-6, UPKEEP_MEAT_PER_MIN * minutes)
+            deserters = min(state.troops, math.ceil((need - have) / per_troop))
+            state.set(MEAT, 0)
+            if deserters > 0:
+                state.troops -= deserters
+                events.append(
+                    f"{deserters} warrior{'s' if deserters != 1 else ''} deserted — "
+                    f"no meat to feed them.")
 
     # 2) Complete any finished builds (a building can only run one job at a time).
     for b in state.buildings:
