@@ -221,6 +221,17 @@ A safe gold stash so the death penalty (half **carried** gold) doesn't wipe ever
   Note: the plugin `add_town_action` registry API still exists but is now **unsurfaced**
   (no UI host) — relocate to a Castle station if town-actions are wanted again.
 
+### 12. Exploration slice 2 — desert + ice biomes — DONE (2026-06-10)
+Extended the overworld into a short progression chain off Greenwood:
+- **Sunscorch Dunes** (desert, ~lvl 2) and **Frostvale** (ice, ~lvl 3-4) — both
+  *remembered* overworld areas (stable seed, non-descend), seeded in migration 0025.
+- World graph: Greenwood ⇄ Dunes (🚪 door) ⇄ Frostvale (🌀 portal), each link
+  two-way. No engine/CSS changes needed — `BIOMES["desert"/"ice"]`, biome-filtered
+  spawns, and the `biome-desert`/`biome-ice` terrain colours already existed; the
+  desert/ice beasts (scorpion/viper, ice-bear/winter-wolf) were seeded in 0017.
+- Verified: both areas generate 5 biome-appropriate monsters; full round-trip
+  traversal Greenwood→Dunes→Frostvale→back works; 56 tests green.
+
 ## What's NEXT (queued, NOT built)
 
 ### Village Phase 2b leftovers
@@ -230,11 +241,13 @@ A safe gold stash so the death penalty (half **carried** gold) doesn't wipe ever
   stays as the build screen (NOT retired).
 
 ### Other open tracks
-- **Exploration slice 2**: more biomes (desert/ice/forest), the named overworld graph
-  in admin, dungeon depth scaling.
+- **Exploration slice 2+**: desert + ice DONE (§12). Remaining: a forest biome,
+  dungeon **depth scaling** (deeper Old Mine levels get tougher), and a named
+  overworld graph editable in admin.
 - **Village slice 2**: army (Barracks) + longships (Shipyard) + **raiding NPC villages**
   (reuse combat engine) + **thralls** (capture vs. slaughter). Then async PvP last.
-- **Combat polish ideas** floated: hit-flash/red tint, floating damage numbers.
+- **Combat polish**: hit-flash + floating damage numbers DONE (§ commit 87d1fd9).
+  Still open: crit/miss feedback, status effects.
 - **Food upkeep** consequence (troops desert) — deferred until army exists.
 
 ---
