@@ -1,4 +1,4 @@
-"""Pure-engine tests for the army/raid loop: warband power, raid resolution
+"""Pure-engine tests for the army/raid loop: army power, raid resolution
 (win/loss, casualties, hero death) and the village food-upkeep / desertion tick."""
 import random
 
@@ -22,9 +22,9 @@ def _target(defense=50, gold=40, loot=None):
     return army.RaidTarget("camp", "Bandit Camp", defense, gold, loot or {"wood": 10})
 
 
-def test_warband_power_includes_hero():
-    assert army.warband_power(10, 8) == 10 * army.TROOP_POWER + 8
-    assert army.warband_power(0, 0) == 0
+def test_army_power_includes_hero():
+    assert army.army_power(10, 8) == 10 * army.TROOP_POWER + 8
+    assert army.army_power(0, 0) == 0
 
 
 def test_train_cost():
@@ -44,7 +44,7 @@ def test_strong_raid_wins_with_loot_and_survivors():
 
 
 def test_hopeless_raid_loses_no_loot():
-    # Tiny warband vs a fortress: even the best luck roll (1.2) can't win.
+    # Tiny army vs a fortress: even the best luck roll (1.2) can't win.
     res = army.resolve_raid(2, 5, _target(defense=1000), FakeRNG(uniform=1.2, random_val=0.99))
     assert res.win is False
     assert res.loot_gold == 0
@@ -52,7 +52,7 @@ def test_hopeless_raid_loses_no_loot():
     assert res.troops_lost >= res.survivors   # heavy casualties when outmatched
 
 
-def test_hero_can_die_only_when_warband_wiped_and_unlucky():
+def test_hero_can_die_only_when_army_wiped_and_unlucky():
     tgt = _target(defense=1000)
     # Wiped out (survivors 0) + unlucky roll under 0.60 -> hero falls.
     dead = army.resolve_raid(2, 1, tgt, FakeRNG(uniform=1.2, random_val=0.10))

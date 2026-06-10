@@ -29,11 +29,11 @@ def village_with_longhouse(level=1) -> VillageState:
 
 # --- ranks & grid growth ---------------------------------------------------
 def test_rank_titles_climb_with_longhouse_level():
-    assert v.rank_title(1) == "Outcast"
-    assert v.rank_title(3) == "Karl"
-    assert v.rank_title(5) == "Hersir"
-    assert v.rank_title(8) == "Jarl"
-    assert v.rank_title(12) == "King"
+    assert v.rank_title(1) == "Camp"
+    assert v.rank_title(3) == "Village"
+    assert v.rank_title(5) == "Town"
+    assert v.rank_title(8) == "City"
+    assert v.rank_title(12) == "Capital"
 
 
 def test_grid_grows_with_rank_and_caps():
@@ -71,7 +71,7 @@ def test_placement_respects_longhouse_requirement():
     defs = defs_fixture()
     state = village_with_longhouse(level=1)
     ok, reason = v.can_place(state, defs, defs["storehouse"], 0, 0)
-    assert not ok and "Longhouse" in reason
+    assert not ok and "Town Hall" in reason
     state2 = village_with_longhouse(level=2)
     ok2, _ = v.can_place(state2, defs, defs["storehouse"], 0, 0)
     assert ok2

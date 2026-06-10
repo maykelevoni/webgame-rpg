@@ -684,13 +684,13 @@ CASTLE_STATIONS = [
     ("village",  "🛖", "Your Village", 3, 1),
     ("market",   "🏪", "Market",       1, 2),
     ("smithy",   "🔨", "Smithy",       5, 2),
-    ("hospital", "🍺", "Mead Hall",    1, 4),
+    ("hospital", "🍺", "Tavern",       1, 4),
     ("vault",    "💰", "Vault",        5, 4),
 ]
 
 
 def get_or_create_village(character: Character) -> Village:
-    """Return the character's Village, founding it (with a starting Longhouse and a
+    """Return the character's Village, founding it (with a starting Town Hall and a
     small stockpile) if new. The Village holds only production buildings — the service
     stations (Market, Smithy, …) live in the shared Castle, not here."""
     village, created = Village.objects.get_or_create(
@@ -698,7 +698,7 @@ def get_or_create_village(character: Character) -> Village:
     if created:
         lh = BuildingType.objects.filter(key=village_engine.LONGHOUSE).first()
         if lh:
-            # The Longhouse stands from day one (level 1), centred on the grid.
+            # The Town Hall stands from day one (level 1), centred on the grid.
             size = village_engine.grid_size_for(1)
             cx = (size - lh.footprint_w) // 2
             cy = (size - lh.footprint_h) // 2
@@ -807,7 +807,7 @@ def upgrade_building(character: Character, building_id: int) -> str:
 # --------------------------------------------------------------------------
 BARRACKS_KEY = "barracks"
 
-# How many warriors you may train in one go, per built Barracks level. (The
+# How many soldiers you may train in one go, per built Barracks level. (The
 # Barracks must be built — Lv >= 1 — to train at all.) Balance is tunable here.
 TRAIN_BATCH_PER_LEVEL = 5
 
@@ -816,9 +816,9 @@ TRAIN_BATCH_PER_LEVEL = 5
 RAID_TARGETS = [
     army_engine.RaidTarget("bandit-camp", "Bandit Camp", defense=45,
                            loot_gold=60, loot={"meat": 20, "wood": 20}, emoji="⛺"),
-    army_engine.RaidTarget("coastal-hamlet", "Coastal Hamlet", defense=120,
+    army_engine.RaidTarget("coastal-hamlet", "Coastal Village", defense=120,
                            loot_gold=160, loot={"wood": 40, "stone": 30, "iron": 10}, emoji="🛖"),
-    army_engine.RaidTarget("rival-jarl", "Rival Jarl's Hall", defense=260,
+    army_engine.RaidTarget("rival-jarl", "Enemy Fort", defense=260,
                            loot_gold=380, loot={"stone": 60, "iron": 30}, emoji="🏯"),
 ]
 RAID_TARGETS_BY_KEY = {t.key: t for t in RAID_TARGETS}
@@ -853,7 +853,7 @@ def army_context(model: Character, state: VillageState) -> dict:
     barracks_lv = _has_built_barracks(state)
     char = character_to_engine(model, load_catalog())
     hero_atk = char.effective_attack()
-    power = army_engine.warband_power(state.troops, hero_atk)
+    power = army_engine.army_power(state.troops, hero_atk)
     rec = hero_recovery(model)
     targets = [{
         "key": t.key, "name": t.name, "emoji": t.emoji, "defense": t.defense,
@@ -881,16 +881,16 @@ def army_payload(user) -> dict:
 
 @transaction.atomic
 def train_troops(user, count: int) -> dict:
-    """Train ``count`` warriors at the Barracks, spending meat. Gated by a built
+    """Train ``count`` soldiers at the Barracks, spending meat. Gated by a built
     Barracks and its level (the training batch cap)."""
     model = Character.objects.select_for_update().get(owner=user)
     state, _defs, _ev = sync_village(model)
     barracks_lv = _has_built_barracks(state)
     if barracks_lv <= 0:
-        return {"error": "Build a Barracks first to train warriors."}
+        return {"error": "Build a Barracks first to train soldiers."}
     count = max(0, int(count))
     if count <= 0:
-        return {"error": "Train at least one warrior."}
+        return {"error": "Train at least one soldier."}
     cap = barracks_lv * TRAIN_BATCH_PER_LEVEL
     if count > cap:
         return {"error": f"Your Barracks (Lv {barracks_lv}) can train at most {cap} at once."}
@@ -902,13 +902,13 @@ def train_troops(user, count: int) -> dict:
     village.meat -= cost
     village.troops += count
     village.save(update_fields=["meat", "troops"])
-    return {"message": f"Trained {count} warrior{'s' if count != 1 else ''} "
+    return {"message": f"Trained {count} soldier{'s' if count != 1 else ''} "
                        f"(−{cost} 🍖).", **army_payload(user)}
 
 
 @transaction.atomic
 def do_raid(user, target_key: str) -> dict:
-    """Lead the warband on a raid. Applies casualties (only survivors return), loot
+    """Lead the army on a raid. Applies casualties (only survivors return), loot
     on a win, and — if the hero falls — lays him up to recover."""
     model = Character.objects.select_for_update().get(owner=user)
     rec = hero_recovery(model)
@@ -919,7 +919,7 @@ def do_raid(user, target_key: str) -> dict:
         return {"error": "No such raid target."}
     state, _defs, _ev = sync_village(model)
     if state.troops <= 0:
-        return {"error": "You have no warriors to raid with — train some first."}
+        return {"error": "You have no soldiers to raid with — train some first."}
 
     char = character_to_engine(model, load_catalog())
     result = army_engine.resolve_raid(state.troops, char.effective_attack(),
@@ -1281,7 +1281,7 @@ def buildable_palette(state: VillageState, defs: dict[str, BuildingDef]) -> list
     out = []
     for d in sorted(defs.values(), key=lambda d: (d.requires_longhouse_level, d.name)):
         if d.key == village_engine.LONGHOUSE or d.category == "service":
-            continue  # Longhouse + services are pre-built, not placed by the player
+            continue  # Town Hall + services are pre-built, not placed by the player
         cost = d.cost(1)
         count = village_engine.count_of(state, d.key)
         allowed = d.allowed_count(lh)

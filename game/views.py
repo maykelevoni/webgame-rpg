@@ -399,7 +399,7 @@ def village_upgrade(request):
 @require_POST
 @login_required
 def village_train(request):
-    """Train warriors at the Barracks (spends meat)."""
+    """Train soldiers at the Barracks (spends meat)."""
     char = get_current_player(request)
     if not char:
         return redirect("game:character_create")
@@ -411,7 +411,7 @@ def village_train(request):
 @require_POST
 @login_required
 def village_raid(request):
-    """Lead the warband on a raid against an NPC target."""
+    """Lead the army on a raid against an NPC target."""
     char = get_current_player(request)
     if not char:
         return redirect("game:character_create")

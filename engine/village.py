@@ -25,21 +25,21 @@ MEAT = "meat"
 IRON = "iron"            # mined at the Village, spent at the Castle Smithy to refine gear
 RESOURCES = (WOOD, STONE, MEAT, IRON)
 
-# The Longhouse is the special building whose level is your rank and gates
-# everything else (you can't build higher than your Longhouse).
+# The Town Hall is the special building whose level is your rank and gates
+# everything else (you can't build higher than your Town Hall).
 LONGHOUSE = "longhouse"
 
 # Tuning constants. Kept here for slice 1; can move to GameConfig (admin) later.
 BASE_STORAGE = 500        # starting resource cap before any Storehouse
-GRID_BASE = 6             # village grid side at Longhouse level 1
+GRID_BASE = 6             # village grid side at Town Hall level 1
 GRID_CAP = 14             # grid never grows past this
 
-# Rank titles by Longhouse level — the "become a King" progression spine.
-RANKS = [(1, "Outcast"), (3, "Karl"), (5, "Hersir"), (8, "Jarl"), (10, "King")]
+# Settlement titles by Town Hall level — the progression spine (plain, no theme).
+RANKS = [(1, "Camp"), (3, "Village"), (5, "Town"), (8, "City"), (10, "Capital")]
 
 
 def rank_title(longhouse_level: int) -> str:
-    """Map a Longhouse level to its Viking title."""
+    """Map a Town Hall level to its settlement title."""
     title = RANKS[0][1]
     for lvl, name in RANKS:
         if longhouse_level >= lvl:
@@ -48,7 +48,7 @@ def rank_title(longhouse_level: int) -> str:
 
 
 def grid_size_for(longhouse_level: int) -> int:
-    """The buildable grid grows by one tile per Longhouse level (capped)."""
+    """The buildable grid grows by one tile per Town Hall level (capped)."""
     return min(GRID_BASE + max(0, longhouse_level - 1), GRID_CAP)
 
 
@@ -71,15 +71,15 @@ class BuildingDef:
     storage_bonus: int = 0         # added to the resource cap, per level
     max_level: int = 5
     requires_longhouse_level: int = 1
-    # How many of this building you may own, by Longhouse level. Keys are the
-    # Longhouse level at which a new slot unlocks; the cap is the value at the
+    # How many of this building you may own, by Town Hall level. Keys are the
+    # Town Hall level at which a new slot unlocks; the cap is the value at the
     # highest unlocked level. e.g. {1: 1, 3: 2, 5: 3} -> 1 at LH1, 2 at LH3, 3 at LH5.
     max_counts: dict = field(default_factory=dict)
     icon: str = ""
     emoji: str = ""
 
     def allowed_count(self, longhouse_level: int) -> int:
-        """How many of this building are permitted at the given Longhouse level."""
+        """How many of this building are permitted at the given Town Hall level."""
         unlocked = [(int(k), v) for k, v in self.max_counts.items()
                     if int(k) <= longhouse_level]
         return max(unlocked, key=lambda kv: kv[0])[1] if unlocked else 0
@@ -131,7 +131,7 @@ class VillageState:
     stone: int = 0
     meat: int = 0
     iron: int = 0
-    troops: int = 0                 # trained warriors (the warband for raids)
+    troops: int = 0                 # trained soldiers (the army for raids)
     last_tick: float = 0.0
     buildings: list[PlacedBuilding] = field(default_factory=list)
 
@@ -155,7 +155,7 @@ def find_longhouse(state: VillageState) -> PlacedBuilding | None:
 
 
 def longhouse_level(state: VillageState) -> int:
-    """Current rank level — the completed Longhouse level (1 if none yet)."""
+    """Current rank level — the completed Town Hall level (1 if none yet)."""
     lh = find_longhouse(state)
     return lh.level if lh and lh.level > 0 else 1
 
@@ -191,11 +191,11 @@ def can_place(state: VillageState, defs: dict[str, BuildingDef], bdef: BuildingD
                 return False, "Those tiles are already occupied."
     lh = longhouse_level(state)
     if lh < bdef.requires_longhouse_level:
-        return False, f"Requires Longhouse level {bdef.requires_longhouse_level}."
+        return False, f"Requires Town Hall level {bdef.requires_longhouse_level}."
     allowed = bdef.allowed_count(lh)
     if count_of(state, bdef.key) >= allowed:
-        return False, (f"You can only have {allowed} {bdef.name} at Longhouse "
-                       f"Lv {lh} — upgrade your Longhouse for more.")
+        return False, (f"You can only have {allowed} {bdef.name} at Town Hall "
+                       f"Lv {lh} — upgrade your Town Hall for more.")
     return True, ""
 
 
@@ -224,12 +224,12 @@ def production_rates(state: VillageState, defs: dict[str, BuildingDef]) -> dict[
 
 
 def troop_upkeep_per_min(state: VillageState) -> float:
-    """Meat the warband eats per minute."""
+    """Meat the army eats per minute."""
     return UPKEEP_MEAT_PER_MIN * max(0, state.troops)
 
 
 def food_balance(state: VillageState, defs: dict[str, BuildingDef]) -> int:
-    """Net meat per minute: production minus the warband's food upkeep. If this is
+    """Net meat per minute: production minus the army's food upkeep. If this is
     negative the village is starving and troops will desert over time."""
     return int(production_rates(state, defs)[MEAT] - troop_upkeep_per_min(state))
 
@@ -255,12 +255,12 @@ def tick(state: VillageState, defs: dict[str, BuildingDef], now: float) -> list[
             if after > before:
                 state.set(res, after)
 
-    # 1b) Feed the warband. Each warrior eats meat every minute; if the stores run
-    #     out the unfed warriors desert (they leave — they don't drop dead), and the
+    # 1b) Feed the army. Each soldier eats meat every minute; if the stores run
+    #     out the unfed soldiers desert (they leave — they don't drop dead), and the
     #     meat floors at zero. Gentle, time-based: it punishes idle army-spam.
     if state.troops > 0 and elapsed > 0:
         minutes = elapsed / 60.0
-        need = troop_upkeep_per_min(state) * minutes      # meat the warband wants
+        need = troop_upkeep_per_min(state) * minutes      # meat the army wants
         have = state.get(MEAT)
         if need <= have:
             state.set(MEAT, have - int(round(need)))
@@ -271,7 +271,7 @@ def tick(state: VillageState, defs: dict[str, BuildingDef], now: float) -> list[
             if deserters > 0:
                 state.troops -= deserters
                 events.append(
-                    f"{deserters} warrior{'s' if deserters != 1 else ''} deserted — "
+                    f"{deserters} soldier{'s' if deserters != 1 else ''} deserted — "
                     f"no meat to feed them.")
 
     # 2) Complete any finished builds (a building can only run one job at a time).

@@ -7,7 +7,7 @@
     <div class="hud">
       <div class="hud-row">
         <strong>{{ char.name }}'s Village</strong>
-        <span class="rank-badge">{{ rank }} · Longhouse Lv {{ longhouse_level }}</span>
+        <span class="rank-badge">{{ rank }} · Town Hall Lv {{ longhouse_level }}</span>
         <span class="grow"></span>
       </div>
       <div class="res-bar">
@@ -29,7 +29,7 @@
         <select name="type_key">
           {% for b in palette %}
             <option value="{{ b.key }}" {% if b.locked or b.at_limit or not b.affordable %}disabled{% endif %}>
-              {{ b.name }} ({{ b.w }}×{{ b.h }}) [{{ b.count }}/{{ b.max_count }}] — 🪵{{ b.cost_wood }}{% if b.cost_stone %} 🪨{{ b.cost_stone }}{% endif %}{% if b.locked %} · 🔒 Longhouse Lv {{ b.requires_lh }}{% elif b.at_limit %} · ⛔ limit reached{% endif %}
+              {{ b.name }} ({{ b.w }}×{{ b.h }}) [{{ b.count }}/{{ b.max_count }}] — 🪵{{ b.cost_wood }}{% if b.cost_stone %} 🪨{{ b.cost_stone }}{% endif %}{% if b.locked %} · 🔒 Town Hall Lv {{ b.requires_lh }}{% elif b.at_limit %} · ⛔ limit reached{% endif %}
             </option>
           {% endfor %}
         </select>
@@ -73,19 +73,19 @@
 
     <p class="hint" style="text-align:center;">
       Buildings take time to raise. Production keeps flowing while you're away —
-      come back and collect. Level the <b>Longhouse</b> to grow your land and rise
-      from {{ rank }} toward King.
+      come back and collect. Level the <b>Town Hall</b> to grow your land and rise
+      from {{ rank }} toward Capital.
     </p>
 
-    {# --- War Camp: train a warband and raid NPC villages --- #}
+    {# --- Army: train soldiers and raid enemy targets --- #}
     <div class="war-camp panel">
-      <h2>⚔️ War Camp</h2>
+      <h2>⚔️ Army</h2>
       {% if army.recovering %}
         <p class="war-recovering">🤕 You fell in your last raid — recovering for
           ~{{ army.recovery_seconds }}s before you can raid or explore again.</p>
       {% endif %}
       <div class="res-bar">
-        <span class="res">🪖 Warband <b>{{ army.troops }}</b></span>
+        <span class="res">🪖 Soldiers <b>{{ army.troops }}</b></span>
         <span class="res">⚔️ Raid power <b>{{ army.power }}</b> <i>(hero {{ army.hero_attack }})</i></span>
         <span class="res">🍖 Upkeep <i>−{{ army.upkeep_per_min }}/min</i></span>
       </div>
@@ -95,13 +95,13 @@
           {% csrf_token %}
           <label>Train
             <input type="number" name="count" min="1" max="{{ army.max_train }}" value="1" style="width:5em;">
-            warriors</label>
+            soldiers</label>
           <button type="submit">Train</button>
           <span class="hint">{{ army.train_cost_each }} 🍖 each · up to
             {{ army.max_train }} at once (Barracks Lv {{ army.barracks_level }})</span>
         </form>
       {% else %}
-        <p class="hint">Build a <b>Barracks</b> (needs Longhouse Lv 3) to train warriors.</p>
+        <p class="hint">Build a <b>Barracks</b> (needs Town Hall Lv 3) to train soldiers.</p>
       {% endif %}
 
       <h3>Raids</h3>

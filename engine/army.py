@@ -1,21 +1,21 @@
-"""Pure army + raid resolution for the Viking second loop. No Django, no I/O —
-the bridge (``game/services.py``) passes plain numbers in and reads the result out,
-so everything here is deterministic and unit-tested.
+"""Pure army + raid resolution for the second loop. No Django, no I/O — the bridge
+(``game/services.py``) passes plain numbers in and reads the result out, so everything
+here is deterministic and unit-tested.
 
-The hero **personally leads** the raid: his attack plus the warband's size make up
-its power, pitted against a target's fixed defense. Win or lose, **only the
-survivors come home**; if the warband is overwhelmed the **hero himself can fall**
-and must recover before adventuring again. Troops cost meat to train and keep
-eating meat every minute (see ``UPKEEP_MEAT_PER_MIN``, consumed in ``village.tick``).
+The hero **personally leads** the raid: his attack plus the army's size make up its
+power, pitted against a target's fixed defense. Win or lose, **only the survivors
+come home**; if the army is overwhelmed the **hero himself can fall** and must recover
+before adventuring again. Soldiers cost meat to train and keep eating meat every
+minute (see ``UPKEEP_MEAT_PER_MIN``, consumed in ``village.tick``).
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 # --- balance (tunable; lives here so it's all in one place) ----------------
-TRAIN_MEAT_COST = 12          # meat to train one warrior
-UPKEEP_MEAT_PER_MIN = 0.15    # meat eaten per warrior per minute (food upkeep)
-TROOP_POWER = 6               # each warrior's contribution to warband power
+TRAIN_MEAT_COST = 12          # meat to train one soldier
+UPKEEP_MEAT_PER_MIN = 0.15    # meat eaten per soldier per minute (food upkeep)
+TROOP_POWER = 6               # each soldier's contribution to army power
 
 
 @dataclass(frozen=True)
@@ -43,25 +43,25 @@ class RaidResult:
     message: str
 
 
-def warband_power(troops: int, hero_attack: int) -> int:
-    """Total raiding power: the warband plus the hero leading it."""
+def army_power(troops: int, hero_attack: int) -> int:
+    """Total raiding power: the army plus the hero leading it."""
     return max(0, troops) * TROOP_POWER + max(0, hero_attack)
 
 
 def train_cost(count: int) -> int:
-    """Meat needed to train ``count`` warriors."""
+    """Meat needed to train ``count`` soldiers."""
     return max(0, count) * TRAIN_MEAT_COST
 
 
 def resolve_raid(troops: int, hero_attack: int, target: RaidTarget, rng) -> RaidResult:
-    """Resolve a raid on ``target`` led by the hero with ``troops`` warriors.
+    """Resolve a raid on ``target`` led by the hero with ``troops`` soldiers.
 
     Win is power-vs-defense with a luck roll. Casualties scale with how outmatched
-    the warband was (wins are cheaper than losses); the hero can fall only on a
-    loss, and is far likelier to if the warband is wiped out entirely.
+    the army was (wins are cheaper than losses); the hero can fall only on a
+    loss, and is far likelier to if the army is wiped out entirely.
     """
     troops = max(0, troops)
-    power = warband_power(troops, hero_attack)
+    power = army_power(troops, hero_attack)
     defense = max(1, target.defense)
 
     win = power * rng.uniform(0.8, 1.2) >= defense
@@ -78,13 +78,13 @@ def resolve_raid(troops: int, hero_attack: int, target: RaidTarget, rng) -> Raid
     loot = dict(target.loot) if win else {}
 
     if win:
-        msg = (f"Victory at {target.name}! {survivors}/{troops} warriors came home "
+        msg = (f"Victory at {target.name}! {survivors}/{troops} soldiers came home "
                f"with {loot_gold} gold.")
     elif hero_died:
-        msg = (f"Disaster at {target.name} — the warband broke and you fell in "
+        msg = (f"Disaster at {target.name} — the army broke and you fell in "
                f"battle. Only {survivors} made it back.")
     else:
-        msg = f"Defeat at {target.name}. {survivors}/{troops} warriors limped home."
+        msg = f"Defeat at {target.name}. {survivors}/{troops} soldiers limped home."
 
     return RaidResult(
         target=target.name, win=win, troops_sent=troops, survivors=survivors,
