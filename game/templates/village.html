@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Village — webgame-rpg{% endblock %}
+{% block content %}
+  <div class="panel">
+    {# --- Rank + resources HUD --- #}
+    <div class="hud">
+      <div class="hud-row">
+        <strong>{{ char.name }}'s Village</strong>
+        <span class="rank-badge">{{ rank }} · Longhouse Lv {{ longhouse_level }}</span>
+        <span class="grow"></span>
+      </div>
+      <div class="res-bar">
+        <span class="res">🪵 Wood <b>{{ wood }}</b>/{{ cap }} <i>+{{ rate_wood }}/min</i></span>
+        <span class="res">🪨 Stone <b>{{ stone }}</b>/{{ cap }} <i>+{{ rate_stone }}/min</i></span>
+        <span class="res">🍖 Meat <b>{{ meat }}</b>/{{ cap }} <i>+{{ rate_meat }}/min</i></span>
+        <span class="res">⛏️ Iron <b>{{ iron }}</b>/{{ cap }} <i>+{{ rate_iron }}/min</i></span>
+      </div>
+    </div>
+
+    {% comment %}
+      The build menu. The <select> here is referenced by the empty-tile buttons
+      below via their form="place-form" attribute, so clicking a tile places the
+      chosen building — no JavaScript required.
+    {% endcomment %}
+    <form id="place-form" method="post" action="{% url 'game:village_place' %}" class="build-menu">
+      {% csrf_token %}
+      <label>Build:
+        <select name="type_key">
+          {% for b in palette %}
+            <option value="{{ b.key }}" {% if b.locked or b.at_limit or not b.affordable %}disabled{% endif %}>
+              {{ b.name }} ({{ b.w }}×{{ b.h }}) [{{ b.count }}/{{ b.max_count }}] — 🪵{{ b.cost_wood }}{% if b.cost_stone %} 🪨{{ b.cost_stone }}{% endif %}{% if b.locked %} · 🔒 Longhouse Lv {{ b.requires_lh }}{% elif b.at_limit %} · ⛔ limit reached{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+      <span class="hint">…then click an empty tile to place it.</span>
+    </form>
+
+    {# --- The village grid: explicit placement so footprints span correctly. --- #}
+    <style>
+      .village-grid .vb.empty,
+      .village-grid .vb.building { background-image: url("{% static 'sprites/'|add:floor_sprite|add:'.png' %}"); }
+    </style>
+    <div class="village-grid" style="grid-template-columns: repeat({{ grid_size }}, 1fr);">
+      {% for cell in grid.cells %}
+        {% if cell.kind == "building" %}
+          <div class="vb building {{ cell.status }}"
+               style="grid-column: {{ cell.x|add:1 }} / span {{ cell.w }}; grid-row: {{ cell.y|add:1 }} / span {{ cell.h }};">
+            {% if cell.emoji %}<span class="vb-emoji">{{ cell.emoji }}</span>{% endif %}
+            <span class="vb-name">{{ cell.name }}</span>
+            {% if cell.status == "building" %}
+              <span class="vb-timer" data-finish="{{ cell.finish_ms }}">⏳</span>
+            {% else %}
+              <span class="vb-lvl">Lv {{ cell.level }}</span>
+              {% if cell.can_upgrade %}
+                <form method="post" action="{% url 'game:village_upgrade' %}" class="vb-up">
+                  {% csrf_token %}
+                  <input type="hidden" name="building_id" value="{{ cell.id }}">
+                  <button type="submit" title="Upgrade">⬆</button>
+                </form>
+              {% endif %}
+            {% endif %}
+          </div>
+        {% else %}
+          <button class="vb empty" form="place-form" type="submit" name="xy"
+                  value="{{ cell.x }},{{ cell.y }}"
+                  style="grid-column: {{ cell.x|add:1 }} / span 1; grid-row: {{ cell.y|add:1 }} / span 1;"
+                  title="Build here">+</button>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <p class="hint" style="text-align:center;">
+      Buildings take time to raise. Production keeps flowing while you're away —
+      come back and collect. Level the <b>Longhouse</b> to grow your land and rise
+      from {{ rank }} toward King.
+    </p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/village.js' %}"></script>
+{% endblock %}

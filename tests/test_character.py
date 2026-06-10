@@ -4,8 +4,8 @@ from engine.items import Item
 
 
 POTION = Item(key="potion", name="Potion", kind="consumable", price=10, heal=20)
-SWORD = Item(key="sword", name="Sword", kind="weapon", price=40, attack_bonus=5)
-ARMOR = Item(key="armor", name="Armor", kind="armor", price=35, defense_bonus=3)
+SWORD = Item(key="sword", name="Sword", kind="weapon", price=40, attack_bonus=5, slot="weapon")
+ARMOR = Item(key="armor", name="Armor", kind="armor", price=35, defense_bonus=3, slot="armor")
 
 
 def test_effective_stats_include_equipped_gear():
@@ -48,7 +48,7 @@ def test_use_consumable_heals_and_consumes():
 
 
 def test_equipping_same_slot_swaps():
-    big = Item(key="great-sword", name="Great Sword", kind="weapon", attack_bonus=9)
+    big = Item(key="great-sword", name="Great Sword", kind="weapon", attack_bonus=9, slot="weapon")
     c = Character(name="Hero", base_attack=8)
     c.add_item(SWORD)
     c.add_item(big)

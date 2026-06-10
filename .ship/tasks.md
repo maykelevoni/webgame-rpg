@@ -1,4 +1,4 @@
-# Feature Tasks: ez-rpg (Django modular web RPG)
+# Feature Tasks: webgame-rpg (Django modular web RPG)
 Generated: 2026-06-07
 Total: 14 tasks — ALL COMPLETE ✅
 

@@ -1,4 +1,4 @@
-"""ez-rpg game engine — pure Python, no Django.
+"""webgame-rpg game engine — pure Python, no Django.
 
 Importing from here gives you the public game objects without reaching into
 individual modules. The golden rule: nothing in this package imports Django.

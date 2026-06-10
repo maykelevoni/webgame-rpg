@@ -1,4 +1,4 @@
-# ez-rpg
+# webgame-rpg
 
 A modular, web-based RPG built with **Django** over a **pure-Python game engine**.
 Explore a grid world, fight monsters turn-by-turn, earn gold and XP, level up, and

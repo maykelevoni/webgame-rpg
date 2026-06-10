@@ -28,13 +28,9 @@ class Item:
     attack_bonus: int = 0    # added to attack when equipped (weapons)
     defense_bonus: int = 0   # added to defense when equipped (armor)
     icon: str = ""           # sprite name for display (set from the DB), e.g. "tile_0115"
+    slot: str = ""           # equipment slot (weapon/shield/helmet/…); "" for non-gear
 
     @property
     def is_gear(self) -> bool:
-        """True for weapons and armor (things you equip)."""
-        return self.kind in GEAR_KINDS
-
-    @property
-    def slot(self) -> str | None:
-        """Which equipment slot this item uses, or None for non-gear."""
-        return self.kind if self.is_gear else None
+        """True for anything with an equipment slot (a thing you wear/wield)."""
+        return bool(self.slot)

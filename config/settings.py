@@ -1,5 +1,5 @@
 """
-Django settings for ez-rpg.
+Django settings for webgame-rpg.
 
 Reads configuration from a local ".env" file (see ".env.example").
 The database is Neon Postgres in real use, via the DATABASE_URL env var.

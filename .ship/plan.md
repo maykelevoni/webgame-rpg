@@ -1,4 +1,4 @@
-# ez-rpg — Technical Plan
+# webgame-rpg — Technical Plan
 
 > Greenfield project. Django shell over a pure-Python engine, Neon Postgres.
 > Golden rule: **`engine/` never imports Django.** The bridge lives in `game/services.py`.

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}World — ez-rpg{% endblock %}
+{% block title %}World — webgame-rpg{% endblock %}
 {% block content %}
   <div class="panel">
     {# --- Status HUD with bars --- #}
@@ -8,12 +8,13 @@
       <div class="hud-row">
         <strong>{{ char.name }}</strong>
         <span style="color:var(--muted);">Lv {{ char.level }}</span>
+        {% if area %}<span class="rank-badge" id="hud-area">📍 {{ area.name }}</span>{% endif %}
         <span class="grow"></span>
-        <span>💰 {{ char.gold }}</span>
+        <span>💰 <span id="hud-gold">{{ char.gold }}</span></span>
       </div>
       <div class="hud-bar">
-        <span class="bar-label">HP {{ char.hp }}/{{ char.max_hp }}</span>
-        <div class="bar hp"><span style="width: {% widthratio char.hp char.max_hp 100 %}%"></span></div>
+        <span class="bar-label">HP <span id="hud-hp">{{ char.hp }}</span>/<span id="hud-maxhp">{{ char.max_hp }}</span></span>
+        <div class="bar hp"><span id="hud-hp-bar" style="width: {% widthratio char.hp char.max_hp 100 %}%"></span></div>
       </div>
       <div class="hud-bar">
         <span class="bar-label">XP {{ char.xp }}/{{ next_xp }}</span>
@@ -21,19 +22,48 @@
       </div>
     </div>
 
+    {% if no_area %}
+      <p class="hint">No areas exist yet — run <code>migrate</code> to seed the world.</p>
+    {% else %}
     <style>
-      .grid .cell { background-image: url("{% static 'sprites/'|add:floor_sprite|add:'.png' %}"); }
+      .grid.biome-grass .terrain-grass { background-image: url("{% static 'sprites/'|add:floor_sprite|add:'.png' %}"); }
     </style>
-    <div class="grid" style="grid-template-columns: repeat({{ size }}, 1fr);">
+    <div class="grid biome-{{ area.biome }}" id="map-grid"
+         style="grid-template-columns: repeat({{ size }}, 1fr);"
+         data-move-url="{% url 'game:move' %}"
+         data-harvest-url="{% url 'game:harvest' %}"
+         data-chest-url="{% url 'game:open_chest' %}"
+         data-combat-url="{% url 'game:combat_action' %}"
+         data-shop-url="{% url 'game:shop_data' %}"
+         data-buy-url="{% url 'game:buy' %}"
+         data-sell-url="{% url 'game:sell' %}"
+         data-sell-res-url="{% url 'game:sell_resource' %}"
+         data-rest-url="{% url 'game:rest' %}"
+         data-village-url="{% url 'game:village' %}"
+         data-smithy-url="{% url 'game:smithy_data' %}"
+         data-refine-url="{% url 'game:refine' %}"
+         data-vault-url="{% url 'game:vault_data' %}"
+         data-vault-move-url="{% url 'game:vault_move' %}"
+         data-inv-url="{% url 'game:inventory_data' %}"
+         data-equip-url="{% url 'game:equip' %}"
+         data-unequip-url="{% url 'game:unequip' %}"
+         data-use-url="{% url 'game:use_item' %}"
+         data-sprite-base="{% static 'sprites/' %}"
+         data-csrf="{{ csrf_token }}">
       {% for row in grid %}{% for cell in row %}
-        <div class="cell{% if cell.is_player %} player{% endif %}"
-             {% if cell.deco %}style="background-image:url('{% static 'sprites/'|add:cell.deco|add:'.png' %}')"{% endif %}>
+        <div class="cell terrain-{{ cell.terrain }}{% if cell.is_player %} player{% endif %}"
+             title="{{ cell.label }}">
           {% if cell.sprite %}
-            <img class="spr" src="{% static 'sprites/'|add:cell.sprite|add:'.png' %}" alt="{{ cell.type }}">
+            <img class="spr" src="{% static 'sprites/'|add:cell.sprite|add:'.png' %}" alt="{{ cell.label }}">
+          {% elif cell.emoji %}
+            <span class="map-emoji">{{ cell.emoji }}</span>
           {% endif %}
         </div>
       {% endfor %}{% endfor %}
     </div>
+
+    {# Modal root — explore.js fills this for the market / hospital overlays. #}
+    <div id="modal-root" class="modal-root" hidden></div>
 
     {# D-pad: works with no JavaScript. Arrow keys are added by keys.js. #}
     <div class="dpad">
@@ -47,33 +77,42 @@
         <input type="hidden" name="direction" value="south"><button>▼</button></form>
     </div>
 
+    <div style="text-align:center;margin:.5rem 0;">
+      <button id="open-inventory" type="button">🎒 Inventory <small>(I)</small></button>
+    </div>
+
     <p style="text-align:center;color:var(--muted);display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;align-items:center;">
       <span><img class="icon-img" src="{% static 'sprites/char_0594.png' %}" alt=""> you</span>
-      <span><img class="icon-img" src="{% static 'sprites/tile_0137.png' %}" alt=""> town</span>
-      <span><img class="icon-img" src="{% static 'sprites/tile_0669.png' %}" alt=""> treasure</span>
-      <span>monsters lurk unseen…</span>
+      <span>🪵🪨🍖 resources</span>
+      <span>📦 chest</span>
+      <span>⛏️🚪🪜 exits</span>
+      <span>🟦 water / ⬛ rock — walk around</span>
     </p>
+    {% endif %}
   </div>
 
   {# --- Pokémon-style battle overlay (only while a fight is active) --- #}
   {% if fight %}
-  <div class="battle-overlay">
+  <div class="battle-overlay" id="battle-overlay">
     <div class="battle-screen panel">
       <h2>A wild {{ fight.monster.name }} appears!</h2>
       <div class="combatants">
         <div class="side" style="text-align:center;">
-          {% if fight.monster.icon %}
-            <img class="battle-sprite" src="{% static 'sprites/'|add:fight.monster.icon|add:'.png' %}" alt="">
+          {% if fight.monster.emoji %}
+            <span class="battle-sprite battle-emoji" id="battle-monster">{{ fight.monster.emoji }}</span>
+          {% else %}
+            <img class="battle-sprite" id="battle-monster"
+                 src="{% static 'sprites/'|add:fight.monster.icon|add:'.png' %}" alt="">
           {% endif %}
           <h3>{{ fight.monster.name }}</h3>
-          <div class="bar hp"><span style="width: {% widthratio fight.monster_hp fight.monster.max_hp 100 %}%"></span></div>
-          <p>{{ fight.monster_hp }} / {{ fight.monster.max_hp }}</p>
+          <div class="bar hp"><span id="mon-hp-bar" style="width: {% widthratio fight.monster_hp fight.monster.max_hp 100 %}%"></span></div>
+          <p id="mon-hp-text">{{ fight.monster_hp }} / {{ fight.monster.max_hp }}</p>
         </div>
         <div class="side" style="text-align:center;">
-          <img class="battle-sprite" src="{% static 'sprites/char_0594.png' %}" alt="">
+          <img class="battle-sprite" id="battle-player" src="{% static 'sprites/char_0594.png' %}" alt="">
           <h3>{{ char.name }}</h3>
-          <div class="bar hp"><span style="width: {% widthratio fight.character.hp fight.character.max_hp 100 %}%"></span></div>
-          <p>{{ fight.character.hp }} / {{ fight.character.max_hp }}</p>
+          <div class="bar hp"><span id="pl-hp-bar" style="width: {% widthratio fight.character.hp fight.character.max_hp 100 %}%"></span></div>
+          <p id="pl-hp-text">{{ fight.character.hp }} / {{ fight.character.max_hp }}</p>
         </div>
       </div>
 
@@ -94,14 +133,34 @@
         {% endif %}
       </div>
 
-      {% if fight.log %}
-      <div class="log">{% for line in fight.log %}<div>{{ line }}</div>{% endfor %}</div>
+      <div class="log" id="battle-log">{% for line in fight.log %}<div>{{ line }}</div>{% endfor %}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# --- Fight result, shown as a modal on the map (no message banner) --- #}
+  {% if combat_result %}
+  <div class="modal-root">
+    <div class="modal panel minigame">
+      {% if combat_result.outcome == "win" %}
+        <div class="modal-head"><h2>⚔️ Victory!</h2></div>
+        <p>You defeated the {{ combat_result.monster }}.</p>
+        <div class="strike-stage"><span class="strike-result">+{{ combat_result.gold }} 🪙 · +{{ combat_result.xp }} XP</span></div>
+      {% elif combat_result.outcome == "lose" %}
+        <div class="modal-head"><h2>💀 Defeated…</h2></div>
+        <div class="strike-stage"><span class="strike-result">You wake at the start — half your gold lost.</span></div>
+      {% else %}
+        <div class="modal-head"><h2>🏃 You fled</h2></div>
+        <div class="strike-stage"><span class="strike-result">You slipped away.</span></div>
       {% endif %}
+      <div class="modal-actions">
+        <form method="get" action="{% url 'game:world' %}"><button type="submit">▶ Continue</button></form>
+      </div>
     </div>
   </div>
   {% endif %}
 {% endblock %}
 
 {% block scripts %}
-  <script src="{% static 'js/keys.js' %}"></script>
+  <script src="{% static 'js/explore.js' %}?v={{ asset_version }}"></script>
 {% endblock %}

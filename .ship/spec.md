@@ -1,4 +1,4 @@
-# ez-rpg — Feature Specification
+# webgame-rpg — Feature Specification
 
 ## Feature Summary
 A modular web-based RPG built with Django. Players sign up / log in, create a
@@ -16,7 +16,7 @@ The project is "modular" in two ways:
 - **Themes** — pick a theme from a dropdown to restyle the whole UI (swap CSS).
 
 ## Problem Statement / Goal
-Rebuild the user's old "ez-rpg" concept with modern Python as a **learning
+Rebuild the user's old "webgame-rpg" concept with modern Python as a **learning
 project**. Code must be readable and well-commented for someone learning Python.
 The game engine is pure, framework-free Python; Django is a thin shell on top.
 This keeps the engine fully testable and insulates the core game from the web

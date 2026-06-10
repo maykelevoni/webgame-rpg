@@ -121,6 +121,23 @@ h1, h2, h3 { line-height: 1.2; }
 .battle-sprite {
   width: 96px; height: 96px; image-rendering: pixelated; object-fit: contain;
 }
+.battle-emoji {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 72px; line-height: 1; text-shadow: 0 2px 6px #000;
+}
+
+/* Paper-doll equipment grid (inventory modal + character page) */
+.doll-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: .5rem 0;
+}
+.doll-slot {
+  border: 1px solid var(--muted); border-radius: 6px; padding: .4rem;
+  text-align: center; font-size: .8rem; display: flex; flex-direction: column;
+  gap: .15rem; align-items: center; min-height: 84px; justify-content: center;
+}
+.doll-emoji { font-size: 1.6rem; line-height: 1; }
+.doll-label { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .03em; }
+.doll-slot button { font-size: .7rem; padding: .15rem .4rem; margin-top: .2rem; }
 .battle-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
 .battle-actions form { margin: 0; }
 
@@ -142,6 +159,92 @@ h1, h2, h3 { line-height: 1.2; }
   font-size: clamp(.7rem, 3.5vw, 1.1rem);
 }
 .cell.player { outline: 2px solid var(--player); outline-offset: -2px; }
+
+/* Biome terrain: water/rock are impassable (you walk around them). */
+.cell.terrain-water { background-color: #2a4d7a; background-image: none; }
+.cell.terrain-rock  { background-color: #4a4a52; background-image: none; }
+
+/* Per-biome floor colour: the walkable tile is always "grass" in the engine, so we
+   tint it by the area's biome (grass keeps its sprite via the inline style). */
+.biome-desert  .cell.terrain-grass { background-color: #cdb27a; background-image: none; }
+.biome-ice     .cell.terrain-grass { background-color: #c6e0ec; background-image: none; }
+.biome-dungeon .cell.terrain-grass { background-color: #34343c; background-image: none; }
+.biome-city    .cell.terrain-grass { background-color: #6f6a62; background-image: none; }
+/* A little biome flavour for the impassable tiles. */
+.biome-ice     .cell.terrain-rock  { background-color: #8fa6b4; }
+.biome-desert  .cell.terrain-rock  { background-color: #9c8757; }
+/* Settlement buildings: solid structure tiles you bump to use. */
+.cell.terrain-building { background-color: #5a4636; background-image: none;
+                         box-shadow: inset 0 0 0 2px #3a2c20; }
+.map-emoji { position: relative; z-index: 1; font-size: clamp(.8rem, 4vw, 1.3rem);
+             line-height: 1; text-shadow: 0 1px 2px #000; }
+.cell .spr, .cell .map-emoji { transition: opacity .12s ease; }
+
+/* ---- On-map modals (market / hospital) ---- */
+.modal-root {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(0, 0, 0, .6);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-root[hidden] { display: none; }
+.modal { max-width: 560px; width: 100%; max-height: 88vh; overflow-y: auto; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; }
+.modal-x { padding: .2rem .6rem; }
+.modal-actions { margin: .6rem 0; }
+.shop-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.shop-cols h3 { margin: .3rem 0; }
+.shop-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.shop-table td { padding: .2rem .3rem; border-bottom: 1px solid var(--tile-empty); }
+.shop-table button { padding: .1rem .5rem; font-size: .8rem; }
+.vault-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.vault-cols h3 { margin: .3rem 0; }
+.vault-input { width: 100%; padding: .3rem; box-sizing: border-box; }
+@media (max-width: 460px) { .shop-cols, .vault-cols { grid-template-columns: 1fr; } }
+
+/* ---- Resource / chest strike animation ---- */
+.minigame { max-width: 380px; text-align: center; }
+.strike-stage {
+  position: relative; min-height: 6rem; margin: .8rem 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.strike-node { display: inline-block; font-size: 4.5rem; line-height: 1; user-select: none; }
+.strike-node.hit { animation: node-shake .22s ease; }
+.strike-node.shatter { animation: node-shatter .32s ease forwards; }
+@keyframes node-shake {
+  0% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(-7px, 3px) rotate(-7deg); }
+  50% { transform: translate(6px, -2px) rotate(6deg); }
+  75% { transform: translate(-3px, 2px) rotate(-3deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+@keyframes node-shatter { to { transform: scale(1.6) rotate(18deg); opacity: 0; } }
+/* Combatants reuse the same hit shake when struck. */
+.battle-sprite.hit { animation: node-shake .22s ease; }
+.chip {
+  position: absolute; left: 50%; top: 40%; pointer-events: none;
+  color: var(--player, #fff); font-size: 1.2rem;
+  animation: chip-fly .4s ease-out forwards;
+}
+@keyframes chip-fly {
+  to { transform: translate(28px, -30px) rotate(40deg); opacity: 0; }
+}
+.integ-bar { height: 10px; background: var(--tile-empty); border-radius: 5px; overflow: hidden; margin: .6rem 0; }
+.integ-fill { display: block; height: 100%; background: #c8703c; transition: width .15s ease; }
+.strike-result {
+  font-size: 1.7rem; font-weight: 700; color: var(--player, #fff);
+  animation: result-pop .3s ease; text-shadow: 0 1px 3px #000;
+}
+@keyframes result-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ---- Transient toast ---- */
+.toast {
+  position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%) translateY(1rem);
+  background: var(--panel, #222); color: var(--text, #eee);
+  border: 1px solid var(--muted); border-radius: 8px; padding: .5rem .9rem;
+  font-size: .9rem; box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+  opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 60;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* A sprite drawn on top of a floor tile (player, monster, chest, door). */
 .spr {
@@ -184,3 +287,53 @@ h1, h2, h3 { line-height: 1.2; }
   .dpad { grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); }
   .dpad button { width: 56px; height: 56px; }
 }
+
+/* ---- Village ---- */
+.rank-badge {
+  font-size: .8rem; color: var(--muted);
+  border: 1px solid var(--muted); border-radius: 999px; padding: .1rem .6rem;
+}
+.res-bar { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .85rem; }
+.res-bar .res i { color: var(--muted); font-style: normal; }
+.res-bar .res b { color: var(--player); }
+.build-menu { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: .6rem 0; }
+.build-menu .hint, .hint { color: var(--muted); font-size: .8rem; }
+
+.village-grid {
+  display: grid;
+  gap: 2px;
+  margin: .6rem auto;
+  max-width: min(92vw, 460px);
+}
+.village-grid .vb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background-color: var(--tile-empty);
+  background-size: cover;
+  image-rendering: pixelated;
+  border-radius: 2px;
+  font-size: clamp(.55rem, 2.6vw, .8rem);
+  overflow: hidden;
+}
+.village-grid .vb.empty {
+  border: 1px dashed var(--muted);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: .5;
+}
+.village-grid .vb.empty:hover { opacity: 1; color: var(--player); }
+.village-grid .vb.building { outline: 2px solid var(--player); outline-offset: -2px; }
+.village-grid .vb.building.building { outline-color: var(--muted); }  /* under construction */
+.vb-emoji { position: absolute; inset: 0; display: flex; align-items: center;
+            justify-content: center; font-size: clamp(1.1rem, 6vw, 2.2rem);
+            line-height: 1; text-shadow: 0 1px 3px #000; }
+.vb-spr { position: absolute; inset: 6%; width: 88%; height: 88%; object-fit: contain;
+          image-rendering: pixelated; opacity: .85; }
+.vb-name { position: relative; z-index: 1; font-weight: 600; text-align: center;
+           text-shadow: 0 1px 2px #000; padding: 0 2px; }
+.vb-lvl, .vb-timer { position: relative; z-index: 1; font-size: .7em; color: var(--muted);
+                     text-shadow: 0 1px 2px #000; }
+.vb-up { position: absolute; top: 2px; right: 2px; margin: 0; z-index: 2; }
+.vb-up button { padding: 0; width: 20px; height: 20px; font-size: .7rem; line-height: 1; }

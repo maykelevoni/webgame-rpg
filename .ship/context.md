@@ -1,7 +1,7 @@
 # Ship Context Log
 
 ## Key Decisions
-- **Project:** Rebuild "ez-rpg" — a modular web RPG. Learning project for a Python learner.
+- **Project:** Rebuild "webgame-rpg" — a modular web RPG. Learning project for a Python learner.
 - **Stack: Django** (pivoted from Flask). Chosen to get auth + admin + ORM for free,
   and to align with the user's Meta Django certification.
 - **Pure-Python engine** (`engine/`) is framework-free and never imports Django. Django

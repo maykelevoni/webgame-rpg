@@ -1,6 +1,6 @@
 {
-  "project": "ez-rpg",
-  "feature": "ez-rpg-flask-rebuild",
+  "project": "webgame-rpg",
+  "feature": "webgame-rpg-flask-rebuild",
   "phase": "complete",
   "current_task": 14,
   "total_tasks": 14,

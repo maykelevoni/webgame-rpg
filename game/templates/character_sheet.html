@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ char.name }} — ez-rpg{% endblock %}
+{% block title %}{{ char.name }} — webgame-rpg{% endblock %}
 {% block content %}
   <div class="panel">
     <h1>{{ char.name }}</h1>
@@ -15,36 +15,52 @@
   </div>
 
   <div class="panel">
-    <h2>Inventory</h2>
-    {% if inventory %}
+    <h2>Equipment</h2>
+    <div class="doll-grid">
+      {% for sl in slots %}
+        <div class="doll-slot">
+          <div class="doll-emoji">{{ sl.emoji }}</div>
+          <div class="doll-label">{{ sl.label }}</div>
+          {% if sl.item %}
+            <b>{{ sl.item.name }}{% if sl.item.refine %} +{{ sl.item.refine }}{% endif %}</b>
+            <form method="post" action="{% url 'game:unequip' %}">{% csrf_token %}
+              <input type="hidden" name="slot" value="{{ sl.slot }}">
+              <input type="hidden" name="next" value="{% url 'game:character_sheet' %}">
+              <button type="submit" class="secondary">Unequip</button>
+            </form>
+          {% else %}
+            <span class="hint">empty</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Pack</h2>
+    {% if pack %}
       <ul class="list">
-        {% for entry in inventory %}
+        {% for i in pack %}
           <li>
-            {% if entry.item.icon %}<img class="icon-img" src="{% static 'sprites/'|add:entry.item.icon|add:'.png' %}" alt="">{% endif %}
-            <span class="grow">
-              {{ entry.item.name }} ×{{ entry.quantity }}
-              {% if entry.equipped %}<em>(equipped)</em>{% endif %}
-            </span>
-            {% if entry.item.kind == "consumable" %}
+            <span class="grow">{% if i.slot and i.refine %}+{{ i.refine }} {% endif %}{{ i.name }} ×{{ i.quantity }}</span>
+            {% if i.kind == "consumable" %}
               <form method="post" action="{% url 'game:use_item' %}">{% csrf_token %}
-                <input type="hidden" name="item_key" value="{{ entry.item.key }}">
+                <input type="hidden" name="item_key" value="{{ i.key }}">
                 <input type="hidden" name="next" value="{% url 'game:character_sheet' %}">
                 <button type="submit">Use</button>
               </form>
-            {% else %}
+            {% elif i.slot %}
               <form method="post" action="{% url 'game:equip' %}">{% csrf_token %}
-                <input type="hidden" name="item_key" value="{{ entry.item.key }}">
+                <input type="hidden" name="item_key" value="{{ i.key }}">
                 <input type="hidden" name="next" value="{% url 'game:character_sheet' %}">
-                <button type="submit" class="secondary">
-                  {% if entry.equipped %}Equipped{% else %}Equip{% endif %}
-                </button>
+                <button type="submit" class="secondary">Equip</button>
               </form>
             {% endif %}
           </li>
         {% endfor %}
       </ul>
     {% else %}
-      <p>Your inventory is empty.</p>
+      <p>Your pack is empty.</p>
     {% endif %}
     <p><a class="btn" href="{% url 'game:world' %}">Back to world</a></p>
   </div>

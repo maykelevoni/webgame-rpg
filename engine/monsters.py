@@ -20,7 +20,8 @@ class Monster:
     gold_reward: int
     xp_reward: int
     min_level: int = 1
-    icon: str = ""  # sprite name for display (set from the DB), e.g. "tile_0108"
+    icon: str = ""    # sprite name for display (set from the DB), e.g. "tile_0108"
+    emoji: str = ""   # emoji for display (preferred over icon), e.g. "🐺"
 
 
 def pick_monster(

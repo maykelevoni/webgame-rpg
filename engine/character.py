@@ -24,6 +24,7 @@ class InventoryEntry:
     quantity: int = 1
     equipped: bool = False
     slot: str | None = None
+    refine_level: int = 0   # Smithy upgrades; adds to the stat the gear already grants
 
 
 @dataclass
@@ -40,8 +41,17 @@ class Character:
 
     # ----- derived stats -------------------------------------------------
     def _equipped_bonus(self, attr: str) -> int:
-        """Sum a bonus (``attack_bonus``/``defense_bonus``) across equipped gear."""
-        return sum(getattr(e.item, attr) for e in self.inventory if e.equipped)
+        """Sum a bonus (``attack_bonus``/``defense_bonus``) across equipped gear.
+        A piece's refine level adds to whichever stat it already grants."""
+        total = 0
+        for e in self.inventory:
+            if not e.equipped:
+                continue
+            base = getattr(e.item, attr)
+            total += base
+            if base > 0:                 # refine boosts the stat the gear provides
+                total += e.refine_level
+        return total
 
     def effective_attack(self) -> int:
         return self.base_attack + self._equipped_bonus("attack_bonus")
