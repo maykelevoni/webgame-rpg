@@ -125,6 +125,21 @@ h1, h2, h3 { line-height: 1.2; }
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 72px; line-height: 1; text-shadow: 0 2px 6px #000;
 }
+/* Floating damage / heal numbers rise from the struck combatant. */
+.combatants .side { position: relative; }
+.dmg-float {
+  position: absolute; left: 50%; top: 28%; transform: translateX(-50%);
+  font-weight: 800; font-size: 1.5rem; pointer-events: none; z-index: 120;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .7);
+  animation: dmg-rise .85s ease-out forwards;
+}
+.dmg-float.dmg { color: #ff5a5a; }
+.dmg-float.heal { color: #54e08a; }
+@keyframes dmg-rise {
+  0%   { opacity: 0; transform: translate(-50%, 12px) scale(.7); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -38px) scale(1.15); }
+}
 
 /* Paper-doll equipment grid (inventory modal + character page) */
 .doll-grid {
@@ -218,8 +233,15 @@ h1, h2, h3 { line-height: 1.2; }
   100% { transform: translate(0, 0) rotate(0); }
 }
 @keyframes node-shatter { to { transform: scale(1.6) rotate(18deg); opacity: 0; } }
-/* Combatants reuse the same hit shake when struck. */
-.battle-sprite.hit { animation: node-shake .22s ease; }
+/* Struck combatants shake AND flash red. */
+.battle-sprite.hit { animation: battle-hit .3s ease; }
+@keyframes battle-hit {
+  0%, 100% { transform: translateX(0); filter: none; }
+  20% { transform: translateX(-4px); filter: brightness(1.7) drop-shadow(0 0 7px #ff4d4d); }
+  45% { transform: translateX(4px);  filter: brightness(1.7) drop-shadow(0 0 7px #ff4d4d); }
+  70% { transform: translateX(-3px); }
+  85% { transform: translateX(3px); }
+}
 .chip {
   position: absolute; left: 50%; top: 40%; pointer-events: none;
   color: var(--player, #fff); font-size: 1.2rem;

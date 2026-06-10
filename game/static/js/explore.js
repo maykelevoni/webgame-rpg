@@ -136,11 +136,24 @@
     const bar = document.getElementById(id);
     if (bar) bar.style.width = Math.max(0, Math.round((hp / max) * 100)) + "%";
   }
+  // Float a damage (red) or heal (green) number up from a combatant sprite.
+  function floatNum(spriteId, amount, kind) {
+    const el = document.getElementById(spriteId);
+    if (!el || !amount) return;
+    const f = document.createElement("span");
+    f.className = "dmg-float " + (kind || "dmg");
+    f.textContent = (kind === "heal" ? "+" : "-") + Math.abs(amount);
+    (el.parentElement || el).appendChild(f);
+    setTimeout(() => f.remove(), 850);
+  }
   function combatAction(data) {
     post(cfg.combatUrl, data).then((d) => {
       if (d.error) return;
-      if (lastMonHp != null && d.monster_hp < lastMonHp) shake("battle-monster");
-      if (lastPlHp != null && d.player_hp < lastPlHp) shake("battle-player");
+      const monDmg = lastMonHp != null ? lastMonHp - d.monster_hp : 0;
+      const plDelta = lastPlHp != null ? lastPlHp - d.player_hp : 0;
+      if (monDmg > 0) { shake("battle-monster"); floatNum("battle-monster", monDmg, "dmg"); }
+      if (plDelta > 0) { shake("battle-player"); floatNum("battle-player", plDelta, "dmg"); }
+      else if (plDelta < 0) floatNum("battle-player", plDelta, "heal");   // healed by an item
       lastMonHp = d.monster_hp; lastPlHp = d.player_hp;
       setBar("mon-hp-bar", d.monster_hp, d.monster_max);
       setText("mon-hp-text", `${d.monster_hp} / ${d.monster_max}`);
