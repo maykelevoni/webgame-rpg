@@ -175,9 +175,29 @@ h1, h2, h3 { line-height: 1.2; }
 }
 .cell.player { outline: 2px solid var(--player); outline-offset: -2px; }
 
-/* Biome terrain: water/rock are impassable (you walk around them). */
-.cell.terrain-water { background-color: #2a4d7a; background-image: none; }
-.cell.terrain-rock  { background-color: #4a4a52; background-image: none; }
+/* Biome terrain: water/rock are impassable (you walk around them). Styled to read
+   as real terrain — water is a rippling pool, rock is a raised, beveled cliff. */
+.cell.terrain-water {
+  background-color: #2f5a8c;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.16), rgba(0,0,0,.12)),
+    repeating-linear-gradient(115deg, rgba(255,255,255,.12) 0 4px, transparent 4px 10px);
+  background-size: auto, 28px 28px;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.20), inset 0 7px 9px rgba(0,0,0,.28);
+  animation: water-shift 3s linear infinite;
+}
+@keyframes water-shift {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 0 0, 28px 0; }
+}
+.cell.terrain-rock {
+  background-color: #6b6b73;
+  background-image:
+    linear-gradient(135deg, rgba(255,255,255,.22), transparent 48%),
+    linear-gradient(315deg, rgba(0,0,0,.40), transparent 48%);
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -3px 0 rgba(0,0,0,.48);
+  border-radius: 3px;
+}
 
 /* Per-biome floor colour: the walkable tile is always "grass" in the engine, so we
    tint it by the area's biome (grass keeps its sprite via the inline style). */
@@ -188,6 +208,8 @@ h1, h2, h3 { line-height: 1.2; }
 /* A little biome flavour for the impassable tiles. */
 .biome-ice     .cell.terrain-rock  { background-color: #8fa6b4; }
 .biome-desert  .cell.terrain-rock  { background-color: #9c8757; }
+/* Frozen water in the snowfield: pale, still (no shimmer). */
+.biome-ice     .cell.terrain-water { background-color: #9fc6dc; animation: none; }
 /* Settlement buildings: solid structure tiles you bump to use. */
 .cell.terrain-building { background-color: #5a4636; background-image: none;
                          box-shadow: inset 0 0 0 2px #3a2c20; }
