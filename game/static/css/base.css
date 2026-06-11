@@ -233,6 +233,28 @@ h1, h2, h3 { line-height: 1.2; }
 .shop-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .shop-table td { padding: .2rem .3rem; border-bottom: 1px solid var(--tile-empty); }
 .shop-table button { padding: .1rem .5rem; font-size: .8rem; }
+/* Village — a grassy base you tap (buildings sit in the scene, not a card list) */
+.village-head { display: flex; align-items: center; gap: .6rem; margin: .8rem 0 .4rem; }
+.village-base {
+  display: grid; width: 100%; max-width: 540px; aspect-ratio: 1; margin: .4rem auto;
+  gap: 2px; padding: 6px; border-radius: 12px; image-rendering: pixelated;
+  border: 3px solid #5a4a32;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 4px 10px rgba(0,0,0,.35);
+}
+.vbuild {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; cursor: pointer; padding: 2px; line-height: 1;
+  background: linear-gradient(180deg, rgba(60,45,30,.55), rgba(40,30,20,.78));
+  border: 1px solid rgba(0,0,0,.45); border-radius: 8px;
+  box-shadow: 0 3px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12);
+  transition: transform .08s ease;
+}
+.vbuild:hover { transform: translateY(-2px); }
+.vbuild.building { outline: 2px dashed #d9c089; }
+.vbuild-emoji { font-size: clamp(20px, 5vw, 38px); filter: drop-shadow(0 2px 2px #000); }
+.vbuild-name { font-size: clamp(.5rem, 1.7vw, .72rem); font-weight: 600; text-align: center; }
+.vbuild-tag { font-size: clamp(.45rem, 1.5vw, .62rem); color: #d9c089; }
+
 /* The Castle — a drawn castle scene (CSS), not a tile grid */
 .castle-panel { background:
   radial-gradient(120% 80% at 50% 0%, rgba(70,100,140,.30), transparent 60%); }

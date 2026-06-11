@@ -1092,49 +1092,62 @@ def enter_castle(user) -> None:
         model.save(update_fields=["current_area"])
 
 
-def build_village_grid(state: VillageState, defs: dict[str, BuildingDef]) -> dict:
-    """Cells for the village template: buildings (with footprint span + status) and
-    empty placeable tiles, each carrying explicit grid coordinates."""
+def build_village_cards(state: VillageState, defs: dict[str, BuildingDef]) -> list[dict]:
+    """One card per standing building for the tap-to-manage village screen (no
+    placement grid). Each card carries everything its options modal needs."""
     now = time.time()
-    size = village_engine.grid_size_for(village_engine.longhouse_level(state))
-    covered = village_engine.occupied_tiles(state, defs)
-    top_left = {(b.x, b.y): b for b in state.buildings}
-
-    cells = []
+    cards = []
     for b in state.buildings:
         d = defs.get(b.key)
         if not d:
             continue
         building = b.is_building(now)
-        cells.append({
-            "kind": "building", "x": b.x, "y": b.y,
-            "w": d.footprint_w, "h": d.footprint_h,
-            "name": d.name, "level": b.level, "id": b.id,
-            "icon": d.icon, "emoji": d.emoji,
+        up_cost = d.cost(b.level + 1) if b.level < d.max_level else {}
+        cards.append({
+            "id": b.id, "key": b.key, "name": d.name, "emoji": d.emoji,
+            "x": b.x, "y": b.y, "w": d.footprint_w, "h": d.footprint_h,
+            "level": b.level, "max_level": d.max_level,
             "status": "building" if building else "ready",
             "finish_ms": int((b.build_finish or 0) * 1000) if building else 0,
             "can_upgrade": (not building) and b.level < d.max_level,
+            "up_wood": up_cost.get(village_engine.WOOD, 0),
+            "up_stone": up_cost.get(village_engine.STONE, 0),
+            "produces": d.produces,
+            "rate": d.rate_at(b.level) if d.produces and b.level > 0 else 0,
+            "is_barracks": b.key == BARRACKS_KEY,
         })
+    # Town Hall first, then alphabetical — a stable, readable order.
+    cards.sort(key=lambda c: (c["key"] != village_engine.LONGHOUSE, c["name"]))
+    return cards
+
+
+@transaction.atomic
+def auto_build(character: Character, type_key: str) -> str:
+    """Build a new building, auto-placing it in the first free spot (no manual
+    placement — the village screen is tap-to-manage now)."""
+    state, defs, _ = sync_village(character)
+    bdef = defs.get(type_key)
+    if not bdef:
+        return "No such building."
+    size = village_engine.grid_size_for(village_engine.longhouse_level(state))
     for y in range(size):
         for x in range(size):
-            if (x, y) in covered or (x, y) in top_left:
-                continue
-            cells.append({"kind": "empty", "x": x, "y": y, "w": 1, "h": 1})
-
-    return {"cells": cells, "size": size}
+            ok, _ = village_engine.can_place(state, defs, bdef, x, y)
+            if ok:
+                return place_building(character, type_key, x, y)
+    return "No room — level your Town Hall to grow the village (or you've hit the limit)."
 
 
 def village_overview(character: Character) -> dict:
     """Everything the village page needs: catches up the tick, then assembles the
     display context (resources, rates, rank, grid, build menu, offline events)."""
     state, defs, events = sync_village(character)
-    grid = build_village_grid(state, defs)
     lh = village_engine.longhouse_level(state)
     rates = village_engine.production_rates(state, defs)
     return {
         "events": events,
-        "grid": grid,
-        "grid_size": grid["size"],
+        "buildings": build_village_cards(state, defs),
+        "grid_size": village_engine.grid_size_for(lh),
         "palette": buildable_palette(state, defs),
         "wood": state.wood, "stone": state.stone, "meat": state.meat,
         "iron": state.iron,

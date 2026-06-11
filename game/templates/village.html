@@ -18,63 +18,48 @@
       </div>
     </div>
 
-    {% comment %}
-      The build menu. The <select> here is referenced by the empty-tile buttons
-      below via their form="place-form" attribute, so clicking a tile places the
-      chosen building — no JavaScript required.
-    {% endcomment %}
-    <form id="place-form" method="post" action="{% url 'game:village_place' %}" class="build-menu">
-      {% csrf_token %}
-      <label>Build:
-        <select name="type_key">
-          {% for b in palette %}
-            <option value="{{ b.key }}" {% if b.locked or b.at_limit or not b.affordable %}disabled{% endif %}>
-              {{ b.name }} ({{ b.w }}×{{ b.h }}) [{{ b.count }}/{{ b.max_count }}] — 🪵{{ b.cost_wood }}{% if b.cost_stone %} 🪨{{ b.cost_stone }}{% endif %}{% if b.locked %} · 🔒 Town Hall Lv {{ b.requires_lh }}{% elif b.at_limit %} · ⛔ limit reached{% endif %}
-            </option>
-          {% endfor %}
-        </select>
-      </label>
-      <span class="hint">…then click an empty tile to place it.</span>
-    </form>
+    {# --- Tap a building to manage it; Build adds a new one (auto-placed). --- #}
+    <div class="village-head">
+      <button id="open-build" class="btn">🔨 Build</button>
+      <span class="hint">Tap a building to manage it.</span>
+    </div>
 
-    {# --- The village grid: explicit placement so footprints span correctly. --- #}
-    <style>
-      .village-grid .vb.empty,
-      .village-grid .vb.building { background-image: url("{% static 'sprites/'|add:floor_sprite|add:'.png' %}"); }
-    </style>
-    <div class="village-grid" style="grid-template-columns: repeat({{ grid_size }}, 1fr);">
-      {% for cell in grid.cells %}
-        {% if cell.kind == "building" %}
-          <div class="vb building {{ cell.status }}"
-               style="grid-column: {{ cell.x|add:1 }} / span {{ cell.w }}; grid-row: {{ cell.y|add:1 }} / span {{ cell.h }};">
-            {% if cell.emoji %}<span class="vb-emoji">{{ cell.emoji }}</span>{% endif %}
-            <span class="vb-name">{{ cell.name }}</span>
-            {% if cell.status == "building" %}
-              <span class="vb-timer" data-finish="{{ cell.finish_ms }}">⏳</span>
-            {% else %}
-              <span class="vb-lvl">Lv {{ cell.level }}</span>
-              {% if cell.can_upgrade %}
-                <form method="post" action="{% url 'game:village_upgrade' %}" class="vb-up">
-                  {% csrf_token %}
-                  <input type="hidden" name="building_id" value="{{ cell.id }}">
-                  <button type="submit" title="Upgrade">⬆</button>
-                </form>
-              {% endif %}
-            {% endif %}
-          </div>
-        {% else %}
-          <button class="vb empty" form="place-form" type="submit" name="xy"
-                  value="{{ cell.x }},{{ cell.y }}"
-                  style="grid-column: {{ cell.x|add:1 }} / span 1; grid-row: {{ cell.y|add:1 }} / span 1;"
-                  title="Build here">+</button>
-        {% endif %}
+    {# Your base: buildings sit on a grassy yard — tap one to manage it. #}
+    <div class="village-base" style="grid-template-columns: repeat({{ grid_size }}, 1fr);
+         grid-template-rows: repeat({{ grid_size }}, 1fr);
+         background-image: url('{% static 'sprites/'|add:floor_sprite|add:'.png' %}');
+         background-size: calc(100% / {{ grid_size }});">
+      {% for b in buildings %}
+        <button class="vbuild {{ b.status }}" data-id="{{ b.id }}"
+                data-name="{{ b.name }}" data-emoji="{{ b.emoji }}"
+                data-level="{{ b.level }}" data-max="{{ b.max_level }}"
+                data-status="{{ b.status }}"
+                data-can-upgrade="{{ b.can_upgrade|yesno:'1,0' }}"
+                data-up-wood="{{ b.up_wood }}" data-up-stone="{{ b.up_stone }}"
+                data-produces="{{ b.produces }}" data-rate="{{ b.rate }}"
+                data-barracks="{{ b.is_barracks|yesno:'1,0' }}"
+                style="grid-column: {{ b.x|add:1 }} / span {{ b.w }}; grid-row: {{ b.y|add:1 }} / span {{ b.h }};">
+          <span class="vbuild-emoji">{{ b.emoji }}</span>
+          <span class="vbuild-name">{{ b.name }}</span>
+          {% if b.status == "building" %}
+            <span class="vbuild-tag vb-timer" data-finish="{{ b.finish_ms }}">⏳</span>
+          {% else %}
+            <span class="vbuild-tag">Lv {{ b.level }}</span>
+          {% endif %}
+        </button>
       {% endfor %}
     </div>
 
+    {{ palette|json_script:"palette-data" }}
+    <div id="vcfg" hidden
+         data-csrf="{{ csrf_token }}"
+         data-upgrade-url="{% url 'game:village_upgrade' %}"
+         data-build-url="{% url 'game:village_build' %}"></div>
+    <div id="modal-root" class="modal-root" hidden></div>
+
     <p class="hint" style="text-align:center;">
-      Buildings take time to raise. Production keeps flowing while you're away —
-      come back and collect. Level the <b>Town Hall</b> to grow your land and rise
-      from {{ rank }} toward Capital.
+      Production keeps flowing while you're away — come back and collect. Level the
+      <b>Town Hall</b> to grow your land and rise from {{ rank }} toward Capital.
     </p>
 
     {# --- Army: train soldiers and raid enemy targets --- #}
@@ -130,5 +115,5 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="{% static 'js/village.js' %}"></script>
+  <script src="{% static 'js/village.js' %}?v={{ asset_version }}"></script>
 {% endblock %}

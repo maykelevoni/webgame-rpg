@@ -70,7 +70,12 @@ edge — instead of flat fills. Real sprite tiles where we have them, layered CS
    `[data-service]` dispatch + a Tavern rest modal showing HP. Map's Castle node → `/castle/`;
    `/play/` redirects city→`/castle/`; the walkable castle grid is retired (`go_castle` removed).
    Verified in-browser (castle renders; Tavern heals with a clear modal).
-3. **Village modals** — fixed building scene, tap → options modal; build-new modal.
+3. **Village modals** — ✅ DONE (2026-06-11). A **grassy walled base scene** (NOT a card
+   list — a card grid felt like a boring site; see the `game-feel-not-a-site` rule) with
+   buildings placed in the yard at their positions. Tap a building → options modal (level/
+   production/upgrade); a **Build** button → palette modal (auto-places — no manual placement).
+   `build_village_cards` (+positions), `auto_build`, `village_build` view; `village.js` modals;
+   `.village-base`/`.vbuild` CSS. Verified in-browser. **Overhaul complete.**
 4. **Terrain art** — ✅ DONE (2026-06-11). Water = textured, gently-animated ripple pool
    with inset depth; rock = raised beveled cliff; snowfield water is a still frozen variant.
    CSS-only (`base.css`). (Done out of order — it's bounded and low-risk.)

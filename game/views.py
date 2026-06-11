@@ -422,15 +422,12 @@ def _int(value, default=-1):
 
 @require_POST
 @login_required
-def village_place(request):
+def village_build(request):
+    """Build a new building (auto-placed) — picked from the Build modal."""
     char = get_current_player(request)
     if not char:
         return redirect("game:character_create")
-    # Empty tiles submit their coordinates as "x,y".
-    xy = request.POST.get("xy", "")
-    x_str, _, y_str = xy.partition(",")
-    messages.info(request, services.place_building(
-        char, request.POST.get("type_key", ""), _int(x_str), _int(y_str)))
+    messages.info(request, services.auto_build(char, request.POST.get("type_key", "")))
     return redirect("game:village")
 
 
