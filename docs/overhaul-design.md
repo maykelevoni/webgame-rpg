@@ -62,7 +62,9 @@ edge — instead of flat fills. Real sprite tiles where we have them, layered CS
 2. **Castle redraw + service modals** — drawn castle at map center; Market/Smithy/Tavern/
    Vault as modal buttons. Kill the walkable castle grid.
 3. **Village modals** — fixed building scene, tap → options modal; build-new modal.
-4. **Terrain art** — real water/rock tiles in biomes.
+4. **Terrain art** — ✅ DONE (2026-06-11). Water = textured, gently-animated ripple pool
+   with inset depth; rock = raised beveled cliff; snowfield water is a still frozen variant.
+   CSS-only (`base.css`). (Done out of order — it's bounded and low-risk.)
 
 ## Open / deferred
 - Travel-while-busy rules (can you do other things mid-march?) — decide during slice 1.
