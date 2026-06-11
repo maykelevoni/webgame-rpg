@@ -7,11 +7,34 @@
   var CSRF = cfg.dataset.csrf;
   var UPGRADE_URL = cfg.dataset.upgradeUrl;
   var BUILD_URL = cfg.dataset.buildUrl;
+  var TRAIN_URL = cfg.dataset.trainUrl;
+  var armyEl = document.getElementById("army-data");
+  var ARMY = armyEl ? JSON.parse(armyEl.textContent) : {};
 
   function open(html) { modalRoot.innerHTML = html; modalRoot.hidden = false; }
   function close() { modalRoot.hidden = true; modalRoot.innerHTML = ""; }
   function csrf() { return '<input type="hidden" name="csrfmiddlewaretoken" value="' + CSRF + '">'; }
   function cost(w, s) { return "🪵" + w + (s > 0 ? " 🪨" + s : ""); }
+
+  // --- the army block shown inside the Barracks modal ----------------------
+  function barracksArmy() {
+    var a = ARMY || {};
+    var recovering = a.recovering
+      ? '<p class="war-recovering">🤕 Recovering from your last raid (~' + a.recovery_seconds + 's).</p>'
+      : "";
+    var status = '<p class="army-line">🪖 Soldiers <b>' + (a.troops || 0) + '</b> · ' +
+      '⚔️ Power <b>' + (a.power || 0) + '</b> · 🍖 −' + (a.upkeep_per_min || 0) + '/min</p>';
+    var max = a.max_train || 0;
+    var train = max > 0
+      ? '<form method="post" action="' + TRAIN_URL + '">' + csrf() +
+        'Train <input type="number" name="count" min="1" max="' + max + '" value="1" style="width:4em;"> soldiers ' +
+        '<button type="submit">Train</button>' +
+        '<p class="hint">' + (a.train_cost_each || 0) + " 🍖 each · up to " + max +
+        " at once (Barracks Lv " + (a.barracks_level || 0) + ")</p></form>"
+      : '<p class="hint">Finish the Barracks to train soldiers.</p>';
+    return recovering + status + train +
+      '<p class="hint">Send your army raiding from the <b>World Map</b>.</p>';
+  }
 
   // --- a building's options modal -----------------------------------------
   function buildingModal(d) {
@@ -30,7 +53,7 @@
         body += '<p class="hint">Already at max level.</p>';
       }
     }
-    if (d.barracks === "1") body += '<p class="hint">Train soldiers in the Army panel below.</p>';
+    if (d.barracks === "1" && d.status !== "building") body += barracksArmy();
     open('<div class="modal panel"><div class="modal-head"><h2>' + d.emoji + " " + d.name +
       '</h2><button class="modal-x" data-close>✕</button></div>' + body + "</div>");
   }

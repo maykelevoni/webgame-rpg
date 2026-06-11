@@ -38,7 +38,6 @@ urlpatterns = [
     path("village/build/", views.village_build, name="village_build"),
     path("village/upgrade/", views.village_upgrade, name="village_upgrade"),
     path("village/train/", views.village_train, name="village_train"),
-    path("village/raid/", views.village_raid, name="village_raid"),
 
     # shop / castle services
     path("town/rest/", views.rest, name="rest"),

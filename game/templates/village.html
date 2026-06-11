@@ -43,6 +43,8 @@
           <span class="vbuild-name">{{ b.name }}</span>
           {% if b.status == "building" %}
             <span class="vbuild-tag vb-timer" data-finish="{{ b.finish_ms }}">⏳</span>
+          {% elif b.is_barracks %}
+            <span class="vbuild-tag">Lv {{ b.level }} · 🪖{{ b.troops }}</span>
           {% else %}
             <span class="vbuild-tag">Lv {{ b.level }}</span>
           {% endif %}
@@ -54,7 +56,8 @@
     <div id="vcfg" hidden
          data-csrf="{{ csrf_token }}"
          data-upgrade-url="{% url 'game:village_upgrade' %}"
-         data-build-url="{% url 'game:village_build' %}"></div>
+         data-build-url="{% url 'game:village_build' %}"
+         data-train-url="{% url 'game:village_train' %}"></div>
     <div id="modal-root" class="modal-root" hidden></div>
 
     <p class="hint" style="text-align:center;">
@@ -62,55 +65,7 @@
       <b>Town Hall</b> to grow your land and rise from {{ rank }} toward Capital.
     </p>
 
-    {# --- Army: train soldiers and raid enemy targets --- #}
-    <div class="war-camp panel">
-      <h2>⚔️ Army</h2>
-      {% if army.recovering %}
-        <p class="war-recovering">🤕 You fell in your last raid — recovering for
-          ~{{ army.recovery_seconds }}s before you can raid or explore again.</p>
-      {% endif %}
-      <div class="res-bar">
-        <span class="res">🪖 Soldiers <b>{{ army.troops }}</b></span>
-        <span class="res">⚔️ Raid power <b>{{ army.power }}</b> <i>(hero {{ army.hero_attack }})</i></span>
-        <span class="res">🍖 Upkeep <i>−{{ army.upkeep_per_min }}/min</i></span>
-      </div>
-
-      {% if army.barracks_level %}
-        <form method="post" action="{% url 'game:village_train' %}" class="build-menu">
-          {% csrf_token %}
-          <label>Train
-            <input type="number" name="count" min="1" max="{{ army.max_train }}" value="1" style="width:5em;">
-            soldiers</label>
-          <button type="submit">Train</button>
-          <span class="hint">{{ army.train_cost_each }} 🍖 each · up to
-            {{ army.max_train }} at once (Barracks Lv {{ army.barracks_level }})</span>
-        </form>
-      {% else %}
-        <p class="hint">Build a <b>Barracks</b> (needs Town Hall Lv 3) to train soldiers.</p>
-      {% endif %}
-
-      <h3>Raids</h3>
-      <table class="shop-table">
-        {% for t in army.targets %}
-        <tr>
-          <td>{{ t.emoji }} {{ t.name }}</td>
-          <td>🛡️ {{ t.defense }}</td>
-          <td>🪙 {{ t.loot_gold }}{% for r, a in t.loot.items %} · {{ a }} {{ r }}{% endfor %}</td>
-          <td>
-            <form method="post" action="{% url 'game:village_raid' %}">
-              {% csrf_token %}
-              <input type="hidden" name="target" value="{{ t.key }}">
-              <button type="submit" {% if army.recovering or not army.troops %}disabled{% endif %}>
-                Raid{% if not t.winnable %} ⚠{% endif %}
-              </button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </table>
-      <p class="hint">⚠ = your raid power is below their defense — expect heavy losses.
-        Win or lose, only the <b>survivors</b> come home.</p>
-    </div>
+    {{ army|json_script:"army-data" }}
   </div>
 {% endblock %}
 

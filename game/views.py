@@ -454,17 +454,6 @@ def village_train(request):
     return redirect("game:village")
 
 
-@require_POST
-@login_required
-def village_raid(request):
-    """Lead the army on a raid against an NPC target."""
-    char = get_current_player(request)
-    if not char:
-        return redirect("game:character_create")
-    r = services.do_raid(request.user, request.POST.get("target", ""))
-    messages.info(request, r.get("error") or r.get("message"))
-    return redirect("game:village")
-
 
 @require_POST
 @login_required

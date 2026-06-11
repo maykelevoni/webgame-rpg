@@ -1115,6 +1115,7 @@ def build_village_cards(state: VillageState, defs: dict[str, BuildingDef]) -> li
             "produces": d.produces,
             "rate": d.rate_at(b.level) if d.produces and b.level > 0 else 0,
             "is_barracks": b.key == BARRACKS_KEY,
+            "troops": state.troops if b.key == BARRACKS_KEY else 0,
         })
     # Town Hall first, then alphabetical — a stable, readable order.
     cards.sort(key=lambda c: (c["key"] != village_engine.LONGHOUSE, c["name"]))

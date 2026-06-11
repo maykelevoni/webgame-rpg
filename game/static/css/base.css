@@ -331,6 +331,7 @@ h1, h2, h3 { line-height: 1.2; }
 .war-camp { margin-top: 1rem; }
 .war-camp h3 { margin: .6rem 0 .3rem; }
 .war-camp .build-menu { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.army-line { background: rgba(255,255,255,.05); padding: .4rem .6rem; border-radius: 8px; }
 .war-recovering {
   background: rgba(220, 80, 80, .18); border: 1px solid #b5474750;
   padding: .5rem .7rem; border-radius: 8px;
