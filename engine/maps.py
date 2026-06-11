@@ -35,6 +35,7 @@ CHEST = "chest"
 RESOURCE = "resource"
 CONNECTION = "connection"  # stepped on an exit -> change area
 BUILDING = "building"      # bumped a settlement building -> use it (don't step on)
+EDGE_EXIT = "edge_exit"    # walked off the grid edge -> back to the World Map
 
 
 @dataclass
@@ -233,6 +234,9 @@ class BiomeMap:
         if bkey is not None:
             return MoveResult(BUILDING, nx, ny, data=bkey)
 
+        # Walking off the edge of the grid leaves the area (back to the World Map).
+        if not self.in_bounds(nx, ny):
+            return MoveResult(EDGE_EXIT, self.player_x, self.player_y)
         if not self.walkable(nx, ny):
             return MoveResult(BLOCKED, self.player_x, self.player_y)
 

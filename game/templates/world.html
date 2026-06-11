@@ -36,6 +36,7 @@
     <div class="grid biome-{{ area.biome }}" id="map-grid"
          style="grid-template-columns: repeat({{ size }}, 1fr);"
          data-move-url="{% url 'game:move' %}"
+         data-map-url="{% url 'game:world_map' %}"
          data-harvest-url="{% url 'game:harvest' %}"
          data-chest-url="{% url 'game:open_chest' %}"
          data-combat-url="{% url 'game:combat_action' %}"

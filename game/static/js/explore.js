@@ -79,6 +79,7 @@
     post(cfg.moveUrl, { direction }).then((data) => {
       busy = false;
       if (data.combat) { window.location.reload(); return; }   // into the combat overlay
+      if (data.leave_map) { window.location = cfg.mapUrl; return; }  // walked off the edge
       if (data.recovering) { toast(data.message); return; }    // hero laid up after a raid
       if (data.building) { useBuilding(data.building); return; }  // bumped a settlement building
       repaint(data);

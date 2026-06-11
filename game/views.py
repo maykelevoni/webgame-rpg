@@ -211,6 +211,8 @@ def move(request):
 
     if not ajax:
         # No-JS fallback: harvest instantly (no mini-game), message + redirect.
+        if kind == "leave_map":
+            return redirect("game:world_map")
         if kind == "building":
             key = result["building"]
             if key == "market":
@@ -234,6 +236,8 @@ def move(request):
     # explore.js: paint the result in place — no full reload.
     if kind == "encounter":
         return JsonResponse({"combat": True})
+    if kind == "leave_map":
+        return JsonResponse({"leave_map": True})
     if kind == "building":
         return JsonResponse({"building": result["building"]})
 

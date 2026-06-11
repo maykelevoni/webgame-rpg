@@ -57,8 +57,12 @@ edge — instead of flat fills. Real sprite tiles where we have them, layered CS
    `Character` (migrations 0029/0030). Services `world_map_payload`/`start_travel`/`arrive`/
    `travel_state`/`enter_castle`; raid targets carry map coords. `/map/` page (positioned
    nodes, distance-based travel timers + JS countdown, Arrive button); nav "Map" + "Explore".
-   Biome arrival → enter the grid; raid arrival → resolve the raid. **Still TODO this slice:**
-   retire the old edge-tile biome connections (both work right now — map is additive).
+   Biome arrival → enter the grid; raid arrival → resolve the raid.
+   **Sync (2026-06-11):** the current node is marked (📍 + ring), its button is "Explore";
+   Village is a node; travel time is measured from where you stand (`travel_seconds_from`).
+   **Edge-exit (2026-06-11):** LDoE-style — walking off the grid edge returns you to the
+   World Map (`maps.EDGE_EXIT` → `do_move` `leave_map` → `/map/`). Biomes now generate with
+   **no exit tiles** (the old edge-tile connections are retired). Slice 1 complete.
 2. **Castle redraw + service modals** — drawn castle at map center; Market/Smithy/Tavern/
    Vault as modal buttons. Kill the walkable castle grid.
 3. **Village modals** — fixed building scene, tap → options modal; build-new modal.

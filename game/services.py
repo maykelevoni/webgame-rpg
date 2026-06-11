@@ -253,7 +253,12 @@ def do_move(request, direction: str) -> dict:
         save_area_map(model, area, m)
         return {"kind": "building", "building": result.data}
 
-    # Stepping on an exit transitions to another area (or the town menu).
+    # Walking off the grid edge leaves the area, back to the World Map.
+    if result.kind == maps_engine.EDGE_EXIT:
+        save_area_map(model, area, m)
+        return {"kind": "leave_map"}
+
+    # Stepping on an exit transitions to another area (legacy; the Castle gate still uses it).
     if result.kind == maps_engine.CONNECTION:
         save_area_map(model, area, m)
         return _use_connection(model, area, result.data)
@@ -1211,10 +1216,11 @@ def build_biome_map(model: Character, area: MapArea, fresh: bool = False) -> Bio
         seed = area.seed
         entry["seed"] = seed
     spec = biome_spec(area.biome, area.size)
-    conn_ids = [str(c.id) for c in area.exits.all()]
+    # Biomes no longer have exit tiles — you leave by walking off the grid edge
+    # (do_move's EDGE_EXIT -> back to the World Map). So generate with no connections.
     spawn = build_spawn_table(area, model.level)
     m = BiomeMap.generate(seed, spec, entry.get("cleared", []),
-                          conn_ids, spawn, model.level)
+                          [], spawn, model.level)
 
     stored = entry.get("monsters")
     if fresh or stored is None:

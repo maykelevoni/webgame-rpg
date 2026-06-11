@@ -144,3 +144,32 @@ def test_settlement_gate_returns_connection():
     m.player_x, m.player_y = gate[0], gate[1] - 1   # the entry, just above the gate
     res = m.move("south")
     assert res.kind == mp.CONNECTION and res.data == "back"
+
+
+# --- edge exit: walking off the grid returns to the World Map ---------------
+def test_walking_off_the_edge_returns_edge_exit():
+    m = gen(7)
+    # Put the player on the left column on a walkable tile, then step west (off-grid).
+    y = next(yy for yy in range(m.size) if m.walkable(0, yy))
+    m.player_x, m.player_y = 0, y
+    res = m.move("west")
+    assert res.kind == mp.EDGE_EXIT
+    assert m.player == (0, y)            # you don't move onto the off-grid tile
+
+
+def test_blocked_terrain_is_not_an_edge_exit():
+    m = gen(7)
+    # An in-bounds blocker (water/rock) stays BLOCKED, not EDGE_EXIT.
+    blocker = next(((x, yy) for yy in range(m.size) for x in range(m.size)
+                    if m.in_bounds(x, yy) and not m.walkable(x, yy)), None)
+    if blocker is None:
+        return                            # no blockers this seed; nothing to assert
+    bx, by = blocker
+    # stand next to it and step into it
+    for d, (dx, dy) in {"east": (-1, 0), "west": (1, 0),
+                        "south": (0, -1), "north": (0, 1)}.items():
+        px, py = bx + dx, by + dy
+        if m.in_bounds(px, py) and m.walkable(px, py):
+            m.player_x, m.player_y = px, py
+            assert m.move(d).kind == mp.BLOCKED
+            break
