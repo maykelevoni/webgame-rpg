@@ -5,8 +5,11 @@
 // steps read smoothly) and open the market/hospital as modals on the map.
 (function () {
   const grid = document.getElementById("map-grid");
-  if (!grid) return;
-  const cfg = grid.dataset;
+  // The map grid OR a Castle "service host" supplies the config (endpoint URLs + csrf).
+  // Movement/combat code is grid-only; the service modals run on the Castle page too.
+  const host = grid || document.getElementById("svc-host");
+  if (!host) return;
+  const cfg = host.dataset;
   const modalRoot = document.getElementById("modal-root");
 
   // --- server calls --------------------------------------------------------
@@ -89,21 +92,41 @@
     }).catch(() => { busy = false; });
   }
 
-  // d-pad buttons call move() instead of submitting (which reloaded the page).
-  document.querySelectorAll(".dpad form").forEach((form) => {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const dir = form.querySelector("[name=direction]").value;
-      move(dir);
+  // Movement only exists on the explorable grid (the Castle page has no grid).
+  if (grid) {
+    // d-pad buttons call move() instead of submitting (which reloaded the page).
+    document.querySelectorAll(".dpad form").forEach((form) => {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const dir = form.querySelector("[name=direction]").value;
+        move(dir);
+      });
     });
-  });
-  // arrow / WASD keys
-  const KEYS = { ArrowUp: "north", ArrowDown: "south", ArrowLeft: "west", ArrowRight: "east",
-                 w: "north", s: "south", a: "west", d: "east" };
-  document.addEventListener("keydown", (e) => {
-    const dir = KEYS[e.key];
-    if (dir) { e.preventDefault(); move(dir); }
-  });
+    // arrow / WASD keys
+    const KEYS = { ArrowUp: "north", ArrowDown: "south", ArrowLeft: "west", ArrowRight: "east",
+                   w: "north", s: "south", a: "west", d: "east" };
+    document.addEventListener("keydown", (e) => {
+      const dir = KEYS[e.key];
+      if (dir) { e.preventDefault(); move(dir); }
+    });
+  }
+
+  // --- Castle service buttons (Market / Smithy / Tavern / Vault) ------------
+  function doRest() {
+    post(cfg.restUrl, {}).then((s) => {
+      if (s.error) { toast(s.error); return; }
+      infoModal("🍺 Tavern", `<p>${s.message}</p><p>❤️ HP <b>${s.hp}</b> / ${s.max_hp}</p>`);
+      updateHud(s);
+    });
+  }
+  function useService(svc) {
+    if (svc === "market") return openMarket();
+    if (svc === "smithy") return openSmithy();
+    if (svc === "vault") return openVault();
+    if (svc === "tavern") return doRest();
+  }
+  document.querySelectorAll("[data-service]").forEach((b) =>
+    b.addEventListener("click", () => useService(b.dataset.service)));
 
   // Bumping a castle station uses it: market -> shop modal, mead hall -> rest,
   // smithy/vault -> their panels, "village" -> the road to your build screen.

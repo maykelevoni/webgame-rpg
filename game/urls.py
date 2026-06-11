@@ -21,7 +21,7 @@ urlpatterns = [
     path("map/", views.world_map_view, name="world_map"),
     path("map/travel/", views.travel, name="travel"),
     path("map/arrive/", views.arrive, name="arrive"),
-    path("map/castle/", views.go_castle, name="go_castle"),
+    path("castle/", views.castle_view, name="castle"),
 
     # world / movement
     path("play/", views.world_view, name="world"),

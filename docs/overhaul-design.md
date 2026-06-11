@@ -63,8 +63,13 @@ edge — instead of flat fills. Real sprite tiles where we have them, layered CS
    **Edge-exit (2026-06-11):** LDoE-style — walking off the grid edge returns you to the
    World Map (`maps.EDGE_EXIT` → `do_move` `leave_map` → `/map/`). Biomes now generate with
    **no exit tiles** (the old edge-tile connections are retired). Slice 1 complete.
-2. **Castle redraw + service modals** — drawn castle at map center; Market/Smithy/Tavern/
-   Vault as modal buttons. Kill the walkable castle grid.
+2. **Castle redraw + service modals** — ✅ DONE (2026-06-11). `/castle/` page: a CSS-drawn
+   castle (towers + crenellations + gate + flag), service **buttons** (🏪 Market / 🔨 Smithy /
+   🍺 Tavern→rest / 💰 Vault) that open the existing modals — explore.js is now grid-optional
+   (reads cfg from `#map-grid` OR `#svc-host`; movement/combat guarded by `if (grid)`); a
+   `[data-service]` dispatch + a Tavern rest modal showing HP. Map's Castle node → `/castle/`;
+   `/play/` redirects city→`/castle/`; the walkable castle grid is retired (`go_castle` removed).
+   Verified in-browser (castle renders; Tavern heals with a clear modal).
 3. **Village modals** — fixed building scene, tap → options modal; build-new modal.
 4. **Terrain art** — ✅ DONE (2026-06-11). Water = textured, gently-animated ripple pool
    with inset depth; rock = raised beveled cliff; snowfield water is a still frozen variant.

@@ -233,6 +233,47 @@ h1, h2, h3 { line-height: 1.2; }
 .shop-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .shop-table td { padding: .2rem .3rem; border-bottom: 1px solid var(--tile-empty); }
 .shop-table button { padding: .1rem .5rem; font-size: .8rem; }
+/* The Castle — a drawn castle scene (CSS), not a tile grid */
+.castle-panel { background:
+  radial-gradient(120% 80% at 50% 0%, rgba(70,100,140,.30), transparent 60%); }
+.castle-scene { text-align: center; padding: .5rem 0 1rem; }
+.castle-art {
+  display: flex; align-items: flex-end; justify-content: center; gap: 6px;
+  height: 168px; margin: 1.2rem auto .8rem;
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,.45));
+}
+.cst-tower, .cst-keep {
+  background: linear-gradient(#8b909a, #585c64);
+  border: 2px solid #393c42; border-bottom: none; position: relative;
+}
+.cst-tower { width: 46px; height: 118px; }
+.cst-keep  { width: 98px; height: 150px; }
+/* crenellated tops (merlons + gaps) */
+.cst-tower::before, .cst-keep::before {
+  content: ""; position: absolute; top: -12px; left: -2px; right: -2px; height: 12px;
+  background: repeating-linear-gradient(90deg, #585c64 0 9px, transparent 9px 17px);
+}
+/* stone courses */
+.cst-tower::after, .cst-keep::after {
+  content: ""; position: absolute; inset: 6px 0 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 18px, rgba(0,0,0,.12) 18px 20px);
+}
+.cst-gate {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 42px; height: 58px; background: #261f17;
+  border: 2px solid #393c42; border-bottom: none; border-radius: 21px 21px 0 0;
+}
+.cst-flag { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); font-size: 20px; }
+.castle-services {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: .7rem;
+  max-width: 380px; margin: 1rem auto 0;
+}
+.castle-services button { font-size: 1rem; padding: .7rem .5rem; display: flex;
+  align-items: center; justify-content: center; gap: .4rem; }
+.castle-services button span { font-size: 1.3rem; }
+.castle-services button small { color: var(--muted); }
+.castle-nav { margin-top: 1rem; display: flex; gap: .6rem; justify-content: center; }
+
 /* World Map — strategic hub with positioned nodes */
 .world-map {
   position: relative; width: 100%; max-width: 560px; aspect-ratio: 1; margin: 1rem auto;

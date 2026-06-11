@@ -22,9 +22,7 @@
         {% if castle.here %}<div class="wm-pin">📍</div>{% endif %}
         <div class="wm-emoji">🏰</div>
         <div class="wm-label">Castle</div>
-        <form method="post" action="{% url 'game:go_castle' %}">{% csrf_token %}
-          <button {% if travel.busy %}disabled{% endif %}>{% if castle.here %}Explore{% else %}Enter{% endif %}</button>
-        </form>
+        <a class="btn wm-btn" href="{% url 'game:castle' %}">Enter</a>
       </div>
 
       {# Village — your base, beside the Castle #}

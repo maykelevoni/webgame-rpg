@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Castle — webgame-rpg{% endblock %}
+{% block content %}
+  <div class="panel castle-panel">
+    <div class="castle-scene">
+      {# A drawn castle (CSS), not a tile grid. #}
+      <div class="castle-art" aria-hidden="true">
+        <div class="cst-tower"></div>
+        <div class="cst-keep"><div class="cst-flag">🚩</div><div class="cst-gate"></div></div>
+        <div class="cst-tower"></div>
+      </div>
+      <h1>The Castle</h1>
+      <p class="hint">Your seat of power — trade, forge, rest, and stash your gold.</p>
+
+      <div class="castle-services">
+        <button data-service="market"><span>🏪</span> Market</button>
+        <button data-service="smithy"><span>🔨</span> Smithy</button>
+        <button data-service="tavern"><span>🍺</span> Tavern <small>rest</small></button>
+        <button data-service="vault"><span>💰</span> Vault</button>
+      </div>
+      <div class="castle-nav">
+        <a class="btn secondary" href="{% url 'game:village' %}">🏠 Village</a>
+        <a class="btn secondary" href="{% url 'game:world_map' %}">🗺️ Map</a>
+      </div>
+    </div>
+
+    {# Service host: carries the endpoint URLs the modal JS (explore.js) uses. #}
+    <div id="svc-host" hidden
+         data-shop-url="{% url 'game:shop_data' %}"
+         data-buy-url="{% url 'game:buy' %}"
+         data-sell-url="{% url 'game:sell' %}"
+         data-sell-res-url="{% url 'game:sell_resource' %}"
+         data-rest-url="{% url 'game:rest' %}"
+         data-smithy-url="{% url 'game:smithy_data' %}"
+         data-refine-url="{% url 'game:refine' %}"
+         data-vault-url="{% url 'game:vault_data' %}"
+         data-vault-move-url="{% url 'game:vault_move' %}"
+         data-inv-url="{% url 'game:inventory_data' %}"
+         data-equip-url="{% url 'game:equip' %}"
+         data-unequip-url="{% url 'game:unequip' %}"
+         data-use-url="{% url 'game:use_item' %}"
+         data-sprite-base="{% static 'sprites/' %}"
+         data-csrf="{{ csrf_token }}"></div>
+    <div id="modal-root" class="modal-root" hidden></div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/explore.js' %}?v={{ asset_version }}"></script>
+{% endblock %}

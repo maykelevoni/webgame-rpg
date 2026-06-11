@@ -151,11 +151,14 @@ def arrive(request):
     return redirect("game:world_map")
 
 
-@require_POST
 @login_required
-def go_castle(request):
-    services.enter_castle(request.user)
-    return redirect("game:world")
+def castle_view(request):
+    """The Castle: a drawn scene with service modals (Market/Smithy/Tavern/Vault)."""
+    char = get_current_player(request)
+    if not char:
+        return redirect("game:character_create")
+    services.enter_castle(request.user)        # mark the hero's position at the Castle
+    return render(request, "castle.html", {"char": char})
 
 
 # ----- world / movement ---------------------------------------------------
@@ -166,6 +169,8 @@ def world_view(request):
         return redirect("game:character_create")
     cfg = services.load_config()
     area = services.get_area(char)
+    if area is not None and area.biome == "city":
+        return redirect("game:castle")         # the Castle is its own page now, not a grid
     ctx = {
         "char": char, "area": area,
         "floor_sprite": services.FLOOR_SPRITE,
