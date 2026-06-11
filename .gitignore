@@ -30,3 +30,6 @@ db.sqlite3
 .playwright-mcp/
 screenshots/
 *.png.bak
+
+# Root-level screenshots / scratch images (Playwright dumps here)
+/*.png

@@ -979,28 +979,52 @@ def _world_nodes() -> dict[str, dict]:
     return nodes
 
 
+VILLAGE_POS = (60, 56)        # the Village sits right beside the central Castle
+
+
+def _player_pos(model: Character) -> tuple[int, int]:
+    """Where the hero currently stands on the World Map (their area, or the Castle)."""
+    a = model.current_area
+    if a is not None:
+        return (a.world_x, a.world_y)
+    return travel_engine.CENTER
+
+
+def _current_key(model: Character) -> str:
+    """The key of the node the hero is currently at (Castle if home/none)."""
+    return model.current_area.key if model.current_area_id else SETTLEMENT_KEY
+
+
 def travel_state(model: Character) -> dict:
     """The hero's current journey, if any."""
     if not model.travel_arrive_at or not model.travel_dest_key:
-        return {"traveling": False, "arrived": False, "seconds_left": 0, "dest_key": ""}
+        return {"traveling": False, "arrived": False, "busy": False,
+                "seconds_left": 0, "dest_key": ""}
     left = (model.travel_arrive_at - _now_utc()).total_seconds()
-    return {"traveling": True, "arrived": left <= 0, "seconds_left": max(0, int(left)),
-            "dest_key": model.travel_dest_key}
+    arrived = left <= 0
+    return {"traveling": True, "arrived": arrived, "busy": not arrived,
+            "seconds_left": max(0, int(left)), "dest_key": model.travel_dest_key}
 
 
 def world_map_payload(user) -> dict:
-    """Nodes (with travel times) + the hero's travel/recovery state for the map page."""
+    """Nodes (travel time from where you stand) + your position + travel/recovery state."""
     model = Character.objects.get(owner=user)
+    px, py = _player_pos(model)
+    here = _current_key(model)
     nodes = list(_world_nodes().values())
     for n in nodes:
-        n["travel_seconds"] = travel_engine.travel_seconds(n["x"], n["y"])
+        n["travel_seconds"] = travel_engine.travel_seconds_from(px, py, n["x"], n["y"])
+        n["here"] = (n["key"] == here)
     st = travel_state(model)
     if st["traveling"]:
         st["dest_name"] = _world_nodes().get(st["dest_key"], {}).get("name", "?")
     return {
         "center": list(travel_engine.CENTER),
-        "castle": {"key": SETTLEMENT_KEY, "name": "Castle", "x": 50, "y": 50},
+        "castle": {"key": SETTLEMENT_KEY, "name": "Castle", "x": 50, "y": 50,
+                   "here": here == SETTLEMENT_KEY},
+        "village_node": {"name": "Village", "x": VILLAGE_POS[0], "y": VILLAGE_POS[1]},
         "nodes": nodes,
+        "current_key": here,
         "travel": st,
         "recovering": hero_recovery(model)["recovering"],
     }
@@ -1008,7 +1032,7 @@ def world_map_payload(user) -> dict:
 
 @transaction.atomic
 def start_travel(user, dest_key: str) -> dict:
-    """Begin a march to a node; arrival time scales with its distance from the Castle."""
+    """Begin a march to a node; arrival time scales with the distance from where you are."""
     model = Character.objects.select_for_update().get(owner=user)
     if hero_recovery(model)["recovering"]:
         return {"error": "You're recovering and can't travel yet."}
@@ -1018,7 +1042,8 @@ def start_travel(user, dest_key: str) -> dict:
     node = _world_nodes().get(dest_key)
     if not node:
         return {"error": "No such destination."}
-    secs = travel_engine.travel_seconds(node["x"], node["y"])
+    px, py = _player_pos(model)
+    secs = travel_engine.travel_seconds_from(px, py, node["x"], node["y"])
     model.travel_dest_key = dest_key
     model.travel_arrive_at = _now_utc() + datetime.timedelta(seconds=secs)
     model.save(update_fields=["travel_dest_key", "travel_arrive_at"])

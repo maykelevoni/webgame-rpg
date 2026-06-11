@@ -248,8 +248,21 @@ h1, h2, h3 { line-height: 1.2; }
 .wm-emoji { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px #000); }
 .wm-castle .wm-emoji { font-size: 42px; }
 .wm-label { font-size: .72rem; margin: 1px 0 2px; white-space: nowrap; }
-.wm-node button { font-size: .68rem; padding: .12rem .45rem; }
+.wm-node button, .wm-btn {
+  font-size: .68rem; padding: .12rem .45rem; display: inline-block;
+  text-decoration: none; cursor: pointer;
+}
 .wm-raid .wm-label small { color: #ff8a8a; }
+/* "You are here" — a glowing ring + a pin above the current node. */
+.wm-here .wm-emoji {
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--player, #8a7bff), 0 0 12px var(--player, #8a7bff);
+}
+.wm-pin {
+  position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+  font-size: 16px; animation: pin-bob 1.2s ease-in-out infinite;
+}
+@keyframes pin-bob { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -3px); } }
 
 /* War Camp (village army/raiding panel) */
 .war-camp { margin-top: 1rem; }

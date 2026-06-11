@@ -24,5 +24,10 @@ def distance_from_center(x: float, y: float) -> float:
 
 def travel_seconds(x: float, y: float) -> int:
     """Seconds to march from the Castle (centre) to the node at (x, y)."""
-    secs = distance_from_center(x, y) * SECONDS_PER_UNIT
+    return travel_seconds_from(CENTER[0], CENTER[1], x, y)
+
+
+def travel_seconds_from(ox: float, oy: float, x: float, y: float) -> int:
+    """Seconds to march from (ox, oy) to (x, y) — distance-proportional."""
+    secs = distance(ox, oy, x, y) * SECONDS_PER_UNIT
     return max(MIN_TRAVEL_SECONDS, int(round(secs)))

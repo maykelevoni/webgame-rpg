@@ -16,34 +16,47 @@
     {% endif %}
 
     <div class="world-map">
-      {# Castle — the centre / home base, no travel needed #}
-      <div class="wm-node wm-castle" style="left:{{ castle.x }}%; top:{{ castle.y }}%;">
+      {# Castle — the central hub #}
+      <div class="wm-node wm-castle{% if castle.here %} wm-here{% endif %}"
+           style="left:{{ castle.x }}%; top:{{ castle.y }}%;">
+        {% if castle.here %}<div class="wm-pin">📍</div>{% endif %}
         <div class="wm-emoji">🏰</div>
         <div class="wm-label">Castle</div>
         <form method="post" action="{% url 'game:go_castle' %}">{% csrf_token %}
-          <button {% if travel.traveling and not travel.arrived %}disabled{% endif %}>Enter</button>
+          <button {% if travel.busy %}disabled{% endif %}>{% if castle.here %}Explore{% else %}Enter{% endif %}</button>
         </form>
       </div>
 
+      {# Village — your base, beside the Castle #}
+      <div class="wm-node wm-village" style="left:{{ village_node.x }}%; top:{{ village_node.y }}%;">
+        <div class="wm-emoji">🏠</div>
+        <div class="wm-label">Village</div>
+        <a class="btn wm-btn" href="{% url 'game:village' %}">Manage</a>
+      </div>
+
       {% for n in nodes %}
-        <div class="wm-node wm-{{ n.kind }}" style="left:{{ n.x }}%; top:{{ n.y }}%;">
+        <div class="wm-node wm-{{ n.kind }}{% if n.here %} wm-here{% endif %}"
+             style="left:{{ n.x }}%; top:{{ n.y }}%;">
+          {% if n.here %}<div class="wm-pin">📍</div>{% endif %}
           <div class="wm-emoji">{{ n.emoji }}</div>
           <div class="wm-label">{{ n.name }}{% if n.kind == "raid" %} <small>🛡️{{ n.defense }}</small>{% endif %}</div>
-          <form method="post" action="{% url 'game:travel' %}">{% csrf_token %}
-            <input type="hidden" name="dest" value="{{ n.key }}">
-            <button {% if recovering or travel.traveling and not travel.arrived %}disabled{% endif %}>
-              {% if n.kind == "raid" %}Raid{% else %}Go{% endif %} · {{ n.travel_seconds }}s
-            </button>
-          </form>
+          {% if n.here %}
+            {# You're already here — just drop into the grid (keeps map & Explore in sync). #}
+            <a class="btn wm-btn" href="{% url 'game:world' %}">Explore</a>
+          {% else %}
+            <form method="post" action="{% url 'game:travel' %}">{% csrf_token %}
+              <input type="hidden" name="dest" value="{{ n.key }}">
+              <button {% if recovering or travel.busy %}disabled{% endif %}>
+                {% if n.kind == "raid" %}Raid{% else %}Go{% endif %} · {{ n.travel_seconds }}s
+              </button>
+            </form>
+          {% endif %}
         </div>
       {% endfor %}
     </div>
 
-    <p class="hint">Farther places take longer to march to. Biomes you explore on foot;
-      raid targets your army fights on arrival. Your Castle and Village are home base.</p>
-    <p style="text-align:center;">
-      <a class="btn secondary" href="{% url 'game:village' %}">🏠 Village</a>
-    </p>
+    <p class="hint">📍 marks where you are. Travel time is measured from your current spot —
+      farther is longer. Biomes you explore on foot; raid targets your army fights on arrival.</p>
   </div>
 {% endblock %}
 
